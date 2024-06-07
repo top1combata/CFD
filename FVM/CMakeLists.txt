@@ -4,12 +4,16 @@ set(PROJECT_NAME FVM)
 
 set(SOURCES
     main.cpp
+
+    Mesh/2D/Structured/CartesianMesh2D.cpp
 )
 
 set(HEADERS
     Utils/Types.h
 
     Boundary/BoundaryCondition.h
+
+    Mesh/2D/Structured/CartesianMesh2D.h
 )
 
 set(TARGET_NAME fvm_test)
