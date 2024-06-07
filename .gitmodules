@@ -1,0 +1,3 @@
+[submodule "FVM/Eigen"]
+	path = FVM/Eigen
+	url = https://gitlab.com/libeigen/eigen/
