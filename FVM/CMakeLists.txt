@@ -8,6 +8,8 @@ set(SOURCES
 
 set(HEADERS
     Utils/Types.h
+
+    Boundary/BoundaryCondition.h
 )
 
 set(TARGET_NAME fvm_test)
