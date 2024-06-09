@@ -11,3 +11,8 @@ build
 *.lib
 *.exe
 *.out
+
+.cache
+.vscode
+.idea
+.vs

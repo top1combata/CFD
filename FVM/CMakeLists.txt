@@ -6,6 +6,8 @@ set(SOURCES
     main.cpp
 
     Mesh/2D/Structured/CartesianMesh2D.cpp
+
+    Discretization/LinearCombination/LinearCombination.hpp
 )
 
 set(HEADERS
@@ -14,6 +16,8 @@ set(HEADERS
     Boundary/BoundaryCondition.h
 
     Mesh/2D/Structured/CartesianMesh2D.h
+
+    Discretization/LinearCombination/LinearCombination.h
 )
 
 set(TARGET_NAME fvm_test)
