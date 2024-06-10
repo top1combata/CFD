@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Utils/Types.h"
-
+#include <functional>
 
 template<class T>
 class BoundaryCondition
@@ -23,3 +23,7 @@ class Boundaries
     BoundaryCondition<Vector> uBoundary;
     BoundaryCondition<Scalar> pBoundary;
 };
+
+
+template<class T>
+using BoundaryConditionGetter = std::function<BoundaryCondition<T>(Index)>;
