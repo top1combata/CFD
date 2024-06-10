@@ -98,7 +98,7 @@ Boundaries CartesianMesh2D::getFaceBoundary(Index faceIdx) const
 List<MeshBase::CellFace> CartesianMesh2D::getCellFaces(Index cellIdx) const
 {
     Scalar dx = m_xlen/m_x, dy = m_ylen/m_y;
-    return {{{0,-dy,0}, 4*cellIdx}, {{dx,0,0}, 4*cellIdx+1}, {{0,dy,0}, 4*cellIdx+2}, {{-dx,0,0}, 4*cellIdx+3}};
+    return {{{0,-dx,0}, 4*cellIdx}, {{dy,0,0}, 4*cellIdx+1}, {{0,dx,0}, 4*cellIdx+2}, {{-dy,0,0}, 4*cellIdx+3}};
 }
 
 
