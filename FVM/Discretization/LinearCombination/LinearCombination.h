@@ -21,8 +21,9 @@ class LinearCombination
 public:
 
     List<Term> terms;
-    T bias;
+    T bias = T{};
 
+    LinearCombination() = default;
     LinearCombination(T value);
 
     LinearCombination(std::initializer_list<Term> const& lst);
@@ -31,6 +32,14 @@ public:
     LinearCombination& operator+=(LinearCombination const& rhs);
 
     LinearCombination& operator-=(LinearCombination const& rhs);
+
+    template<class Field>
+    T evaluate(Field const& field) const 
+    requires requires(Field field, Index idx)
+    {
+        getFieldValue(field, idx);
+        {getFieldValue(field, idx)} -> std::same_as<T>;
+    };
 };
 
 

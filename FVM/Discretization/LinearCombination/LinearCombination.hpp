@@ -4,7 +4,7 @@ template<class T>
 LinearCombination<T>::LinearCombination(T value) : bias(value) {}
 
 template<class T>
-LinearCombination<T>::LinearCombination(std::initializer_list<Term> const& lst) : terms(lst.size()), bias(T{})
+LinearCombination<T>::LinearCombination(std::initializer_list<Term> const& lst) : terms(lst.size())
 {
     std::copy(lst.begin(), lst.end(), terms.begin());
 }
@@ -84,6 +84,20 @@ LinearCombination<T>& LinearCombination<T>::operator+=(LinearCombination<T> cons
     return *this;
 }
 
+template<class T> 
+template <class Field>
+T LinearCombination<T>::evaluate(Field const& field) const
+requires requires(Field field, Index idx)
+{
+    getFieldValue(field, idx);
+    {getFieldValue(field, idx)} -> std::same_as<T>;
+}
+{
+    T result = bias;
+    for (auto [coeff, idx] : terms)
+        result += coeff * getFieldValue(field, idx);
+    return result;
+}
 
 template<class T>
 std::ostream& operator<<(std::ostream& os, LinearCombination<T> const& lc)

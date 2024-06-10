@@ -20,6 +20,8 @@ set(HEADERS
     Discretization/LinearCombination/LinearCombination.h
 )
 
+set(CMAKE_CXX_STANDARD 20)
+
 set(TARGET_NAME fvm_test)
 add_executable(${TARGET_NAME} ${SOURCES} ${HEADERS})
 
