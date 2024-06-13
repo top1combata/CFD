@@ -5,6 +5,7 @@ set(PROJECT_NAME FVM)
 set(SOURCES
     main.cpp
 
+    Mesh/Geometry.cpp
     Mesh/2D/Structured/CartesianMesh2D.cpp
 
     Discretization/LinearCombination/LinearCombination.hpp
@@ -15,6 +16,7 @@ set(HEADERS
 
     Boundary/BoundaryCondition.h
 
+    Mesh/Geometry.h
     Mesh/2D/Structured/CartesianMesh2D.h
 
     Discretization/LinearCombination/LinearCombination.h
