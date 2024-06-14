@@ -100,7 +100,7 @@ LinearCombination<T> Interpolation::faceNormalGradient(MeshBase const& mesh, Ind
             Scalar dist = Geometry::distanceCellToFace(mesh, cellFromIdx, faceIdx);
 
             LinearCombination<T> result;
-            result += T(boundaryValue / dist);
+            result += boundaryValue / dist;
             result -= {{1/dist, cellFromIdx}};
             return result;
         }

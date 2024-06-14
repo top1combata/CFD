@@ -24,7 +24,8 @@ public:
     T bias = T{};
 
     LinearCombination() = default;
-    LinearCombination(T value);
+    template<typename U> requires std::convertible_to<U,T>
+    LinearCombination(U value);
 
     LinearCombination(std::initializer_list<Term> const& lst);
 

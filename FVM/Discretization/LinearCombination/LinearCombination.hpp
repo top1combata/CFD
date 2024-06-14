@@ -1,7 +1,8 @@
 #include "LinearCombination.h"
 
 template<class T>
-LinearCombination<T>::LinearCombination(T value) : bias(value) {}
+template<class U> requires std::convertible_to<U,T>
+LinearCombination<T>::LinearCombination(U value) : bias(value) {}
 
 template<class T>
 LinearCombination<T>::LinearCombination(std::initializer_list<Term> const& lst) : terms(lst.size())
