@@ -105,17 +105,11 @@ Vector CartesianMesh2D::getFaceNormal(Index faceIdx, Index cellFromIdx) const
     Index side = faceIdx%4;
 
     Vector normal;
-    switch (side)
-    {
-    case 0:
-        normal = {0,-1,0};
-    case 1:
-        normal = {1,0,0};
-    case 2:
-        normal = {0,1,0};
-    case 3:
-        normal = {-1,0,0};
-    }
+    if      (side == 0) normal = {0,-1,0};
+    else if (side == 1) normal = {1,0,0};
+    else if (side == 2) normal = {0,1,0};
+    else if (side == 3) normal = {-1,0,0};
+
     return normal * (cellFromIdx == cellIdx ? 1 : -1);
 }
 
