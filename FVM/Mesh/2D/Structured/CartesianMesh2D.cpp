@@ -149,3 +149,27 @@ Index CartesianMesh2D::getGlobalIndex(Index xIdx, Index yIdx) const
 {
     return yIdx*m_x + xIdx;
 }
+
+
+void CartesianMesh2D::setTopBoundary(Boundaries boundaries)
+{
+    m_boundaries.top = boundaries;
+}
+
+
+void CartesianMesh2D::setBottomBoundary(Boundaries boundaries)
+{
+    m_boundaries.bottom = boundaries;
+}
+
+
+void CartesianMesh2D::setLeftBoundary(Boundaries boundaries)
+{
+    m_boundaries.left = boundaries;
+}
+
+
+void CartesianMesh2D::setRightBoundary(Boundaries boundaries)
+{
+    m_boundaries.right = boundaries;
+}
