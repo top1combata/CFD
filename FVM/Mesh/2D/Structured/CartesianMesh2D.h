@@ -13,11 +13,14 @@ public:
     Index getCellsAmount() const override;
     List<Index> getNeighbourCells(Index cellIdx) const override;
     Vector getCellCentroid(Index cellIdx) const override;
+    Scalar getCellVolume(Index cellIdx) const override;
 
     //faces
     Index getFacesAmount() const override;
     Vector getFaceCentroid(Index faceIdx) const override;
     bool isBoundaryFace(Index faceIdx) const override;
+    Array<Index, 2> getFaceNeighbours(Index faceIdx) const override;
+    Vector getFaceNormal(Index faceIdx, Index cellIdx) const override;
     Boundaries getFaceBoundary(Index faceIdx) const override;
     List<CellFace> getCellFaces(Index cellIdx) const override;
 

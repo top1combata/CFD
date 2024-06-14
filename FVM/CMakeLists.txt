@@ -9,6 +9,7 @@ set(SOURCES
     Mesh/2D/Structured/CartesianMesh2D.cpp
 
     Discretization/LinearCombination/LinearCombination.hpp
+    Discretization/Interpolation/Interpolation.hpp
 )
 
 set(HEADERS
@@ -20,6 +21,7 @@ set(HEADERS
     Mesh/2D/Structured/CartesianMesh2D.h
 
     Discretization/LinearCombination/LinearCombination.h
+    Discretization/Interpolation/Interpolation.h
 )
 
 set(CMAKE_CXX_STANDARD 20)

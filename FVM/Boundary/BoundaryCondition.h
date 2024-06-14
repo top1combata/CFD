@@ -3,16 +3,17 @@
 #include "Utils/Types.h"
 #include <functional>
 
+
+enum class BoundaryConditionType
+{
+    FIXED_VALUE,
+    FIXED_GRADIENT
+};
+
 template<class T>
 class BoundaryCondition
 {
 public:
-    
-    enum class BoundaryConditionType
-    {
-        FIXED_VALUE,
-        FIXED_GRADIENT
-    };
 
     T value;
     BoundaryConditionType type;

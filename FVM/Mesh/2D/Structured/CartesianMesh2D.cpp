@@ -37,6 +37,12 @@ Vector CartesianMesh2D::getCellCentroid(Index cellIdx) const
 }
 
 
+Scalar CartesianMesh2D::getCellVolume(Index cellIdx) const
+{
+    return m_xlen/m_x * m_ylen/m_y;
+}
+
+
 Index CartesianMesh2D::getFacesAmount() const
 {
     return 2*m_x*m_y + m_x + m_y;
@@ -78,6 +84,42 @@ bool CartesianMesh2D::isBoundaryFace(Index faceIdx) const
 }
 
 
+Array<Index, 2> CartesianMesh2D::getFaceNeighbours(Index faceIdx) const
+{
+    Index cellIdx = faceIdx/4;
+    Index side = faceIdx%4;
+    auto [xIdx, yIdx] = getLocalIndices(cellIdx);
+
+    if      (side == 0) yIdx--;
+    else if (side == 1) xIdx++;
+    else if (side == 2) yIdx++;
+    else if (side == 3) xIdx--;
+    
+    return {cellIdx, getGlobalIndex(xIdx, yIdx)};
+}
+
+
+Vector CartesianMesh2D::getFaceNormal(Index faceIdx, Index cellFromIdx) const
+{
+    Index cellIdx = faceIdx/4;
+    Index side = faceIdx%4;
+
+    Vector normal;
+    switch (side)
+    {
+    case 0:
+        normal = {0,-1,0};
+    case 1:
+        normal = {1,0,0};
+    case 2:
+        normal = {0,1,0};
+    case 3:
+        normal = {-1,0,0};
+    }
+    return normal * (cellFromIdx == cellIdx ? 1 : -1);
+}
+
+
 Boundaries CartesianMesh2D::getFaceBoundary(Index faceIdx) const
 {
     Index side = faceIdx%4;
@@ -92,6 +134,7 @@ Boundaries CartesianMesh2D::getFaceBoundary(Index faceIdx) const
     case 3:
         return m_boundaries.left;
     }
+    return {};
 }
 
 
