@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Utils/Types.h"
+#include "Utils/TypesOperations.h"
 
 class Term
 {
@@ -15,15 +16,17 @@ public:
     }
 };
 
+
 template<class T>
 class LinearCombination
 {
 public:
 
     List<Term> terms;
-    T bias = T{};
+    T bias = zero<T>();
 
     LinearCombination() = default;
+
     template<typename U> requires std::convertible_to<U,T>
     LinearCombination(U value);
 
@@ -41,6 +44,9 @@ public:
         getFieldValue(field, idx);
         {getFieldValue(field, idx)} -> std::same_as<T>;
     };
+
+private:
+
 };
 
 

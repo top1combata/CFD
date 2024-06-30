@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Utils/Types.h"
 #include "Mesh/MeshBase.h"
 #include "Boundary/BoundaryCondition.h"
 

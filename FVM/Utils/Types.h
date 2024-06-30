@@ -22,8 +22,3 @@ using Matrix = Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic>;
 using ScalarField = Eigen::Matrix<Scalar, Eigen::Dynamic, 1>;
 
 using VectorField = Eigen::Matrix<Scalar, Eigen::Dynamic, 3>;
-
-
-inline Scalar getFieldValue(ScalarField const& field, Index idx) {return field(idx);}
-
-inline Vector getFieldValue(VectorField const& field, Index idx) {return field.row(idx).transpose();}

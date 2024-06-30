@@ -1,4 +1,3 @@
-#include "Interpolation.h"
 #include "Mesh/Geometry.h"
 
 
@@ -20,25 +19,29 @@ LinearCombination<T> Interpolation::diffusionFluxOverCell(MeshBase const& mesh, 
     LinearCombination<T> flux;
     for (auto [faceVector, faceIdx] : mesh.getCellFaces(cellIdx))
     {
-        flux += faceNormalGradient(mesh, cellIdx, faceIdx, boundaries) * faceVector.norm();;
+        flux += faceNormalGradient(mesh, cellIdx, faceIdx, boundaries) * faceVector.norm();
     }
     return flux;
 }
 
-
+#include <iostream>
 template<class T>
-LinearCombination<T> Interpolation::convectionFluxOverCell(MeshBase const& mesh, Index cellIdx, BoundaryConditionGetter<T> const& boundaries, VectorField const& U)
+LinearCombination<T> Interpolation::convectionFluxOverCell(MeshBase const& mesh, Index cellIdx, BoundaryConditionGetter<T> const& boundaries, ScalarField const& massFlow)
 {
     LinearCombination<T> flux;
+
     for (auto [faceVector, faceIdx] : mesh.getCellFaces(cellIdx))
     {
-        auto velocityBoundaryGetter = [&mesh](Index idx)
-        {
-            return mesh.getFaceBoundary(idx).uBoundary;
-        };
-        Vector velocityOnFace = valueOnFace(mesh, faceIdx, velocityBoundaryGetter).evaluate(U);
+        Scalar massFlux = massFlow(faceIdx);
+
+        auto [nb1, nb2] = mesh.getFaceNeighbours(faceIdx);
         
-        flux += velocityOnFace.dot(faceVector) * valueOnFace(mesh, faceIdx, boundaries);
+        LinearCombination<T> implicitVelocity = {{1,1}};
+        implicitVelocity.terms[0].idx = ((cellIdx == nb1) ^ (massFlux > 0) ? nb2 : nb1);
+        if (mesh.isBoundaryFace(faceIdx))
+            implicitVelocity = valueOnFace(mesh, faceIdx, boundaries);
+        
+        flux += massFlux * implicitVelocity;
     }
 
     return flux;

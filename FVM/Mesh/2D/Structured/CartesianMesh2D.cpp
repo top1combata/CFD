@@ -45,7 +45,7 @@ Scalar CartesianMesh2D::getCellVolume(Index cellIdx) const
 
 Index CartesianMesh2D::getFacesAmount() const
 {
-    return 2*m_x*m_y + m_x + m_y;
+    return 4*getCellsAmount();
 }
 
 
@@ -80,7 +80,7 @@ bool CartesianMesh2D::isBoundaryFace(Index faceIdx) const
     Index idx = faceIdx/4, side = faceIdx%4;
     auto [xIdx, yIdx] = getLocalIndices(idx);
 
-    return xIdx == 0 && side == 3 || xIdx == m_x-1 && side == 1 || yIdx == 0 && side == 0 || yIdx == m_y-1 && side == 2;
+    return (xIdx == 0 && side == 3) || (xIdx == m_x-1 && side == 1) || (yIdx == 0 && side == 0) || (yIdx == m_y-1 && side == 2);
 }
 
 
@@ -108,7 +108,7 @@ Vector CartesianMesh2D::getFaceNormal(Index faceIdx, Index cellFromIdx) const
     if      (side == 0) normal = {0,-1,0};
     else if (side == 1) normal = {1,0,0};
     else if (side == 2) normal = {0,1,0};
-    else if (side == 3) normal = {-1,0,0};
+    else                normal = {-1,0,0};
 
     return normal * (cellFromIdx == cellIdx ? 1 : -1);
 }

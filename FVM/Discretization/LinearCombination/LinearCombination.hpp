@@ -1,4 +1,3 @@
-#include "LinearCombination.h"
 
 template<class T>
 template<class U> requires std::convertible_to<U,T>
@@ -49,7 +48,7 @@ template<class T>
 LinearCombination<T>& operator*=(LinearCombination<T>& lhs, Scalar rhs)
 {
     if (rhs == 0)
-        return lhs = LinearCombination<T>(T{});
+        return lhs = LinearCombination<T>();
 
     for (Term& term : lhs.terms)
         term.coeff *= rhs;
