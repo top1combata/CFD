@@ -29,4 +29,6 @@ public:
         Index faceIdx;
     };
     virtual List<CellFace> getCellFaces(Index cellIdx) const = 0;
+
+    virtual ~MeshBase() = default;
 };

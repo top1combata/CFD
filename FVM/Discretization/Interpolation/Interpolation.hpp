@@ -24,7 +24,7 @@ LinearCombination<T> Interpolation::diffusionFluxOverCell(MeshBase const& mesh, 
     return flux;
 }
 
-#include <iostream>
+
 template<class T>
 LinearCombination<T> Interpolation::convectionFluxOverCell(MeshBase const& mesh, Index cellIdx, BoundaryConditionGetter<T> const& boundaries, ScalarField const& massFlow)
 {
