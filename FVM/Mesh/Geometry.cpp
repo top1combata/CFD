@@ -5,7 +5,7 @@ Scalar Geometry::distanceCellToFace(MeshBase const& mesh, Index cellIdx, Index f
 {
     Vector faceCentroid = mesh.getFaceCentroid(faceIdx);
     Vector cellCentroid = mesh.getCellCentroid(cellIdx);
-    Vector normal = mesh.getFaceNormal(faceIdx, cellIdx);
+    Vector normal = mesh.getFaceVector(faceIdx);
 
     Scalar dist = abs(cellCentroid.dot(normal) - faceCentroid.dot(normal)) / normal.norm();
     return dist;

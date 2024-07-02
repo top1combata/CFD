@@ -4,13 +4,13 @@ CartesianMesh2D::CartesianMesh2D(Index xSize, Index ySize, Scalar xLen, Scalar y
     m_x(xSize), m_y(ySize), m_xlen(xLen), m_ylen(yLen) {}
 
 
-Index CartesianMesh2D::getCellsAmount() const
+Index CartesianMesh2D::getCellAmount() const
 {
     return m_x*m_y;
 };
 
 
-List<Index> CartesianMesh2D::getNeighbourCells(Index cellIdx) const
+List<Index> CartesianMesh2D::getCellNeighbours(Index cellIdx) const
 {
     auto [xIdx, yIdx] = getLocalIndices(cellIdx);
     List<Index> Neighbours;
@@ -43,9 +43,9 @@ Scalar CartesianMesh2D::getCellVolume(Index cellIdx) const
 }
 
 
-Index CartesianMesh2D::getFacesAmount() const
+Index CartesianMesh2D::getFaceAmount() const
 {
-    return 4*getCellsAmount();
+    return 4*getCellAmount();
 }
 
 
@@ -99,18 +99,22 @@ Array<Index, 2> CartesianMesh2D::getFaceNeighbours(Index faceIdx) const
 }
 
 
-Vector CartesianMesh2D::getFaceNormal(Index faceIdx, Index cellFromIdx) const
+Vector CartesianMesh2D::getFaceVector(Index faceIdx) const
 {
-    Index cellIdx = faceIdx/4;
     Index side = faceIdx%4;
+    Scalar dx = m_xlen/m_x, dy = m_ylen/m_y;
 
-    Vector normal;
-    if      (side == 0) normal = {0,-1,0};
-    else if (side == 1) normal = {1,0,0};
-    else if (side == 2) normal = {0,1,0};
-    else                normal = {-1,0,0};
-
-    return normal * (cellFromIdx == cellIdx ? 1 : -1);
+    switch (side)
+    {
+    case 0:
+        return {0,-dx,0};
+    case 1:
+        return {dy,0,0};
+    case 2:
+        return {0,dx,0};
+    default:
+        return {-dy,0,0};
+    }
 }
 
 

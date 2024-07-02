@@ -11,9 +11,9 @@ public:
     CartesianMesh2D(Index xSize, Index ySize, Scalar xLen, Scalar yLen);
 
     // cells
-    Index getCellsAmount() const override;
+    Index getCellAmount() const override;
 
-    List<Index> getNeighbourCells(Index cellIdx) const override;
+    List<Index> getCellNeighbours(Index cellIdx) const override;
 
     Vector getCellCentroid(Index cellIdx) const override;
 
@@ -21,7 +21,7 @@ public:
 
 
     //faces
-    Index getFacesAmount() const override;
+    Index getFaceAmount() const override;
 
     Vector getFaceCentroid(Index faceIdx) const override;
 
@@ -29,7 +29,7 @@ public:
 
     Array<Index, 2> getFaceNeighbours(Index faceIdx) const override;
 
-    Vector getFaceNormal(Index faceIdx, Index cellIdx) const override;
+    Vector getFaceVector(Index faceIdx) const override;
 
     Boundaries getFaceBoundary(Index faceIdx) const override;
 

@@ -28,11 +28,22 @@ void SimpleAlgorithm::solve()
 }
 
 
+VectorField& SimpleAlgorithm::getU()
+{
+    return m_U;
+}
+
+
+ScalarField& SimpleAlgorithm::getP()
+{
+    return m_p;
+}
+
 
 void SimpleAlgorithm::initFields()
 {
-    Index totalCells = m_mesh.getCellsAmount();
-    Index totalFaces = m_mesh.getFacesAmount();
+    Index totalCells = m_mesh.getCellAmount();
+    Index totalFaces = m_mesh.getFaceAmount();
 
     m_p           = ScalarField::Zero(totalCells, 1);
     m_U           = VectorField::Zero(totalCells, 3);
@@ -54,7 +65,7 @@ void SimpleAlgorithm::initFields()
 
 void SimpleAlgorithm::computePressureGradient()
 {
-    Index totalCells = m_mesh.getCellsAmount();
+    Index totalCells = m_mesh.getCellAmount();
 
     for (Index cellIdx = 0; cellIdx < totalCells; cellIdx++)
     {
@@ -65,7 +76,7 @@ void SimpleAlgorithm::computePressureGradient()
 
 void SimpleAlgorithm::solveMomentum()
 {
-    Index totalCells = m_mesh.getCellsAmount();
+    Index totalCells = m_mesh.getCellAmount();
 
     m_Au.setZero();
     VectorField uSource = VectorField::Zero(totalCells, 3);
@@ -105,7 +116,7 @@ void SimpleAlgorithm::solveMomentum()
 
 void SimpleAlgorithm::updateMassFluxes()
 {
-    Index totalCells = m_mesh.getCellsAmount();
+    Index totalCells = m_mesh.getCellAmount();
     
     for (Index cellIdx = 0; cellIdx < totalCells; cellIdx++)
     {
@@ -134,8 +145,8 @@ void SimpleAlgorithm::updateMassFluxes()
 
 void SimpleAlgorithm::correctPressure()
 {
-    Index totalCells = m_mesh.getCellsAmount();
-    Index totalFaces = m_mesh.getFacesAmount();
+    Index totalCells = m_mesh.getCellAmount();
+    Index totalFaces = m_mesh.getFaceAmount();
 
 
     BoundaryConditionGetter<Scalar> pCorrBoundaries = [pBound = pBoundaries()] (Index faceIdx)
