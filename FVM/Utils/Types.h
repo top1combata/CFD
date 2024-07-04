@@ -3,6 +3,8 @@
 #include <Eigen/Core>
 #include <vector>
 #include <array>
+#include <unordered_map>
+
 
 using Index = int;
 
@@ -11,6 +13,10 @@ using List = std::vector<T>;
 
 template<class T, Index n>
 using Array = std::array<T,n>;
+
+template<class K, class V, class Hash = std::hash<K>, class Equal = std::equal_to<K>>
+using HashMap = std::unordered_map<K, V, Hash, Equal>;
+
 
 
 using Scalar = double;

@@ -9,6 +9,8 @@ set(SOURCES
 
     Mesh/Geometry.cpp
     Mesh/2D/Structured/CartesianMesh2D.cpp
+    Mesh/2D/Unstructured/PolyMesh2D.cpp
+    Mesh/2D/Unstructured/Parse.cpp
 
     Discretization/LinearCombination/LinearCombination.hpp
     Discretization/Interpolation/Interpolation.hpp
@@ -28,6 +30,8 @@ set(HEADERS
     Mesh/MeshBase.h
     Mesh/Geometry.h
     Mesh/2D/Structured/CartesianMesh2D.h
+    Mesh/2D/Unstructured/PolyMesh2D.h
+    Mesh/2D/Unstructured/Parse.h
 
     Discretization/LinearCombination/LinearCombination.h
     Discretization/Interpolation/Interpolation.h
