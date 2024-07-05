@@ -7,6 +7,8 @@ project(PROJECT_NAME)
 set(SOURCES
     main.cpp
 
+    Utils/MatrixSolver.cpp
+
     Mesh/Geometry.cpp
     Mesh/2D/Structured/CartesianMesh2D.cpp
     Mesh/2D/Unstructured/PolyMesh2D.cpp
@@ -21,6 +23,7 @@ set(SOURCES
 set(HEADERS
     Utils/Types.h
     Utils/TypesOperations.h
+    Utils/MatrixSolver.h
 
     Config/PhysicalProperties.h
     Config/SolverControl.h

@@ -2,7 +2,7 @@
 #include "Discretization/Interpolation/Interpolation.h"
 #include "Config/PhysicalProperties.h"
 #include "Config/SolverControl.h"
-#include "Eigen/Dense"
+#include "Utils/MatrixSolver.h"
 
 
 SimpleAlgorithm::SimpleAlgorithm(MeshBase const& mesh) : m_mesh(mesh){}
@@ -13,6 +13,7 @@ void SimpleAlgorithm::solve()
 {
     initFields();
 
+    // SIMPLE loop
     for (Index iterNum = 1; iterNum <= Config::maxIterations && !converged(); iterNum++)
     {
         computePressureGradient();
@@ -52,6 +53,8 @@ void SimpleAlgorithm::initFields()
     m_Au          = Matrix::Zero(totalCells, totalCells);
     m_VbyA        = ScalarField::Zero(totalCells, 1);
 
+    // init mass fluxes
+    // can't be just zero because of boundary values
     for (Index cellIdx = 0; cellIdx < totalCells; cellIdx++)
     {
         for (auto [faceVector, faceIdx] : m_mesh.getCellFaces(cellIdx))
@@ -79,7 +82,7 @@ void SimpleAlgorithm::solveMomentum()
     Index totalCells = m_mesh.getCellAmount();
 
     m_Au.setZero();
-    VectorField uSource = VectorField::Zero(totalCells, 3);
+    Matrix uSource = VectorField::Zero(totalCells, 3);
 
     for (Index cellIdx = 0; cellIdx < totalCells; cellIdx++)
     {
@@ -98,19 +101,17 @@ void SimpleAlgorithm::solveMomentum()
         uSource.row(cellIdx) =  -Ueqn.bias.transpose();
     }
 
+    // relaxation
+    relaxSystem(m_Au, uSource, m_U, Config::uRelax);
+
+    // the field V/A should be treated after under relaxation
     for (Index cellIdx = 0; cellIdx < totalCells; cellIdx++)
     {
         m_VbyA(cellIdx) = m_mesh.getCellVolume(cellIdx) / m_Au(cellIdx, cellIdx);
     }
 
-    // implicit relaxation
-    for (Index cellIdx = 0; cellIdx < totalCells; cellIdx++)
-    {
-        uSource.row(cellIdx) += (1/Config::uRelax - 1) * m_Au(cellIdx, cellIdx) * m_U.row(cellIdx);
-        m_Au(cellIdx, cellIdx) /= Config::uRelax;
-    }
-
-    m_U = m_Au.partialPivLu().solve(uSource);
+    // solving for new velocity field
+    m_U = solveSystem(m_Au, uSource);
 }
 
 
@@ -148,7 +149,7 @@ void SimpleAlgorithm::correctPressure()
     Index totalCells = m_mesh.getCellAmount();
     Index totalFaces = m_mesh.getFaceAmount();
 
-
+    // boundary conditions for pressure correction equation
     BoundaryConditionGetter<Scalar> pCorrBoundaries = [pBound = pBoundaries()] (Index faceIdx)
     {
         auto boundaries = pBound(faceIdx);
@@ -157,8 +158,9 @@ void SimpleAlgorithm::correctPressure()
     };
 
     Matrix pA = Matrix::Zero(totalCells, totalCells);
-    ScalarField pSource = ScalarField::Zero(totalCells);
+    Matrix pSource = ScalarField::Zero(totalCells);
 
+    // generating system
     for (Index cellIdx = 0; cellIdx < totalCells; cellIdx++)
     {               
         LinearCombination<Scalar> diffusiveFlux;
@@ -182,13 +184,15 @@ void SimpleAlgorithm::correctPressure()
         pSource(cellIdx) = -Peqn.bias;
     }
 
-    ScalarField pCorrection = pA.partialPivLu().solve(pSource);
+    // idk how, but explicit under relaxtion gives faster convergence than implicit
+    ScalarField pCorrection = solveSystem(pA, pSource) * Config::pRelax;
 
-
+    // generating U correction field
     VectorField uCorrection(totalCells, 3);
     for (Index cellIdx = 0; cellIdx < totalCells; cellIdx++)
         uCorrection.row(cellIdx) = -m_VbyA(cellIdx) * Interpolation::cellGradient(m_mesh, cellIdx, pCorrection, pCorrBoundaries).transpose();
 
+    // generating mass fluxes correction field
     ScalarField massFluxesCorrection(totalFaces, 1);
     for (Index cellIdx = 0; cellIdx < totalCells; cellIdx++)
     {
@@ -202,9 +206,9 @@ void SimpleAlgorithm::correctPressure()
     m_U_residual = relativeResidual(m_U, uCorrection);
     m_p_residual = relativeResidual(m_p, pCorrection);
 
-    m_U           += uCorrection * Config::pRelax;
-    m_p           += pCorrection * Config::pRelax;
-    m_mass_fluxes += massFluxesCorrection * Config::pRelax;
+    m_U           += uCorrection;
+    m_p           += pCorrection;
+    m_mass_fluxes += massFluxesCorrection;
 }
 
 
