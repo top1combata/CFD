@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Eigen/Core>
+#include <Eigen/SparseCore>
 #include <vector>
 #include <array>
 #include <unordered_map>
@@ -24,6 +25,8 @@ using Scalar = double;
 using Vector = Eigen::Matrix<Scalar, 3, 1>;
 
 using Matrix = Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic>;
+
+using SparseMatrix = Eigen::SparseMatrix<Scalar>;
 
 using ScalarField = Eigen::Matrix<Scalar, Eigen::Dynamic, 1>;
 
