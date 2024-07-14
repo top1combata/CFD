@@ -8,6 +8,7 @@ set(SOURCES
     main.cpp
 
     Utils/MatrixSolver.cpp
+    Utils/Timer.cpp
 
     Mesh/Geometry.cpp
     Mesh/2D/Structured/CartesianMesh2D.cpp
@@ -24,6 +25,7 @@ set(HEADERS
     Utils/Types.h
     Utils/TypesOperations.h
     Utils/MatrixSolver.h
+    Utils/Timer.h
 
     Config/PhysicalProperties.h
     Config/SolverControl.h
