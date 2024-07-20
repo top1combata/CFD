@@ -25,10 +25,10 @@ private:
     ScalarField m_VbyA;
     ScalarField m_mass_fluxes;
     // momentum matrix and
-    Matrix m_U_matrix;
+    SparseMatrix m_U_matrix;
     Matrix m_U_source;
     // pressure correction matrix
-    Matrix m_p_matrix;
+    SparseMatrix m_p_matrix;
     Matrix m_p_source;
 
     HashMap<std::string, Timer> m_timers;

@@ -9,3 +9,4 @@ void relaxSystem(AnyMatrix& A, Matrix& rhs, Matrix const& previousValue, Scalar 
 Matrix solveSystem(Matrix& A, Matrix const& rhs);
 
 Matrix solveSystem(SparseMatrix& A, Matrix const& rhs);
+Matrix solveSystem(SparseMatrix& A, Matrix const& rhs, Matrix const& guess);

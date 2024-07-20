@@ -46,13 +46,21 @@ set(HEADERS
 
 set(CMAKE_CXX_STANDARD 20)
 
-set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -march=native -O2 -Wall -fopenmp")
+set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -march=native -O2 -Wall")
 
 set(TARGET_NAME fvm_test)
 add_executable(${TARGET_NAME} ${SOURCES} ${HEADERS})
 
-
-add_subdirectory(Eigen)
-
-target_link_libraries(${TARGET_NAME} eigen)
 target_include_directories(${TARGET_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+
+# OpenMP
+find_package(OpenMP)
+if (OpenMP_CXX_FOUND)
+    target_link_libraries(${TARGET_NAME} OpenMP::OpenMP_CXX)
+else()
+    message(WARNING "CMake can't find OpenMP\n")
+endif()
+
+#Eigen
+add_subdirectory(Eigen)
+target_link_libraries(${TARGET_NAME} eigen)

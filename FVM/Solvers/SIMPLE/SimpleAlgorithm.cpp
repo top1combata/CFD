@@ -54,7 +54,7 @@ void SimpleAlgorithm::solveMomentum()
 
     // solving for new velocity field
     m_timers["solving linear systems"].start();
-    m_U = solveSystem(m_U_matrix, m_U_source);
+    m_U = solveSystem(m_U_matrix, m_U_source, m_U);
     m_timers["solving linear systems"].stop();
 }
 
@@ -103,9 +103,9 @@ void SimpleAlgorithm::initFields()
     m_U           = VectorField::Zero(totalCells, 3);
     m_mass_fluxes = ScalarField::Zero(totalFaces, 1);
     m_p_grad      = VectorField::Zero(totalCells, 3);
-    m_U_matrix    = Matrix::Zero(totalCells, totalCells);
+    m_U_matrix    = SparseMatrix(totalCells, totalCells);
     m_U_source    = Matrix::Zero(totalCells, 3);
-    m_p_matrix    = Matrix::Zero(totalCells, totalCells);
+    m_p_matrix    = SparseMatrix(totalCells, totalCells);
     m_p_source    = Matrix::Zero(totalCells, 1);
     m_VbyA        = ScalarField::Zero(totalCells, 1);
 
@@ -176,10 +176,10 @@ void SimpleAlgorithm::generateMomentumSystem()
 {
     m_timers["generating linear systems"].start();
     Index totalCells = m_mesh.getCellAmount();
+    List<Eigen::Triplet<Scalar>> triplets;
     auto uBoundaries = getVelocityBoundaries();
 
     m_U_matrix.setZero();
-    m_U_source.setZero();
 
     for (Index cellIdx = 0; cellIdx < totalCells; cellIdx++)
     {
@@ -193,10 +193,11 @@ void SimpleAlgorithm::generateMomentumSystem()
         Ueqn += pressureGradient;   
 
         for (auto [coeff, idx] : Ueqn.terms)
-            m_U_matrix(cellIdx, idx) += coeff;
+            triplets.emplace_back(cellIdx, idx, coeff);
 
         m_U_source.row(cellIdx) =  -Ueqn.bias.transpose();
     }
+    m_U_matrix.setFromTriplets(triplets.begin(), triplets.end());
     m_timers["generating linear systems"].stop();
 }
 
@@ -205,9 +206,10 @@ void SimpleAlgorithm::generatePressureCorrectionSystem()
 {
     m_timers["generating linear systems"].start();
     Index totalCells = m_mesh.getCellAmount();
+    List<Eigen::Triplet<Scalar>> triplets;
     auto pCorrBoundaries = getPressureCorrectionBoundaries();
+
     m_p_matrix.setZero();
-    m_p_source.setZero();
 
     for (Index cellIdx = 0; cellIdx < totalCells; cellIdx++)
     {               
@@ -227,10 +229,11 @@ void SimpleAlgorithm::generatePressureCorrectionSystem()
         Peqn += diffusiveFlux;
 
         for (auto [coeff, idx] : Peqn.terms)
-            m_p_matrix(cellIdx, idx) += coeff;
+            triplets.emplace_back(cellIdx, idx, coeff);
         
         m_p_source(cellIdx) = -Peqn.bias;
     }
+    m_p_matrix.setFromTriplets(triplets.begin(), triplets.end());
     m_timers["generating linear systems"].stop();
 }
 
@@ -239,10 +242,11 @@ void SimpleAlgorithm::computeVbyA()
 {
     m_timers["explicit field computation"].start();
     Index totalCells = m_mesh.getCellAmount();
+    auto diagonal = m_U_matrix.diagonal();
 
     for (Index cellIdx = 0; cellIdx < totalCells; cellIdx++)
     {
-        m_VbyA(cellIdx) = m_mesh.getCellVolume(cellIdx) / m_U_matrix(cellIdx, cellIdx);
+        m_VbyA(cellIdx) = m_mesh.getCellVolume(cellIdx) / diagonal(cellIdx);
     }
     m_timers["explicit field computation"].stop();
 }

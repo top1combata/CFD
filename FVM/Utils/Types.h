@@ -20,13 +20,13 @@ using HashMap = std::unordered_map<K, V, Hash, Equal>;
 
 
 
-using Scalar = double;
+using Scalar = float;
 
 using Vector = Eigen::Matrix<Scalar, 3, 1>;
 
 using Matrix = Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic>;
 
-using SparseMatrix = Eigen::SparseMatrix<Scalar>;
+using SparseMatrix = Eigen::SparseMatrix<Scalar, Eigen::RowMajor>;
 
 using ScalarField = Eigen::Matrix<Scalar, Eigen::Dynamic, 1>;
 
