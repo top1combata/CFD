@@ -5,6 +5,11 @@
 #include "Utils/MatrixSolver.h"
 #include <iostream>
 #include <format>
+#include <algorithm>
+
+#ifdef _OPENMP
+#include <omp.h>
+#endif
 
 
 SimpleAlgorithm::SimpleAlgorithm(MeshBase const& mesh) : m_mesh(mesh){}
@@ -99,15 +104,17 @@ void SimpleAlgorithm::initFields()
     Index totalCells = m_mesh.getCellAmount();
     Index totalFaces = m_mesh.getFaceAmount();
 
+    // initial guesses
     m_p           = ScalarField::Zero(totalCells, 1);
     m_U           = VectorField::Zero(totalCells, 3);
-    m_mass_fluxes = ScalarField::Zero(totalFaces, 1);
-    m_p_grad      = VectorField::Zero(totalCells, 3);
+
+    m_mass_fluxes = ScalarField(totalFaces, 1);
+    m_p_grad      = VectorField(totalCells, 3);
     m_U_matrix    = SparseMatrix(totalCells, totalCells);
-    m_U_source    = Matrix::Zero(totalCells, 3);
+    m_U_source    = Matrix(totalCells, 3);
     m_p_matrix    = SparseMatrix(totalCells, totalCells);
-    m_p_source    = Matrix::Zero(totalCells, 1);
-    m_VbyA        = ScalarField::Zero(totalCells, 1);
+    m_p_source    = Matrix(totalCells, 1);
+    m_VbyA        = ScalarField(totalCells, 1);
 
     m_timers.clear();
 
@@ -131,6 +138,9 @@ void SimpleAlgorithm::computePressureGradient()
     Index totalCells = m_mesh.getCellAmount();
     auto pBoundaries = getPressureBoundaries();
 
+#ifdef _OPENMP
+    #pragma omp parallel for
+#endif
     for (Index cellIdx = 0; cellIdx < totalCells; cellIdx++)
     {
         m_p_grad.row(cellIdx) = Interpolation::cellGradient(m_mesh, cellIdx, m_p, pBoundaries).transpose();
@@ -146,6 +156,9 @@ void SimpleAlgorithm::computeMassFluxes()
     auto pBoundaries = getPressureBoundaries();
     auto uBoundaries = getVelocityBoundaries();
     
+#ifdef _OPENMP
+    #pragma omp parallel for
+#endif
     for (Index cellIdx = 0; cellIdx < totalCells; cellIdx++)
     {
         for (auto [faceVector, faceIdx] : m_mesh.getCellFaces(cellIdx))
@@ -172,32 +185,31 @@ void SimpleAlgorithm::computeMassFluxes()
 }
 
 
+template<class T, class Rhs>
+void generateSystemImpl(SparseMatrix&, Rhs&, Index size, std::function<LinearCombination<T>(Index)> const&);
+
+
 void SimpleAlgorithm::generateMomentumSystem()
 {
     m_timers["generating linear systems"].start();
-    Index totalCells = m_mesh.getCellAmount();
-    List<Eigen::Triplet<Scalar>> triplets;
-    auto uBoundaries = getVelocityBoundaries();
 
-    m_U_matrix.setZero();
-
-    for (Index cellIdx = 0; cellIdx < totalCells; cellIdx++)
+    std::function<LinearCombination<Vector>(Index)> uEqnGetter = 
+    [this, uBoundaries = getVelocityBoundaries()](Index cellIdx)
     {
         LinearCombination<Vector> convection = Interpolation::convectionFluxOverCell(m_mesh, cellIdx, uBoundaries, m_mass_fluxes);
         LinearCombination<Vector> diffusion  = Interpolation::diffusionFluxOverCell(m_mesh, cellIdx, uBoundaries) * Config::viscosity;
         Vector pressureGradient = getFieldValue(m_p_grad, cellIdx) * m_mesh.getCellVolume(cellIdx);
 
-        LinearCombination<Vector> Ueqn;
-        Ueqn += convection;
-        Ueqn -= diffusion;
-        Ueqn += pressureGradient;   
+        LinearCombination<Vector> uEqn;
+        uEqn += convection;
+        uEqn -= diffusion;
+        uEqn += pressureGradient;  
 
-        for (auto [coeff, idx] : Ueqn.terms)
-            triplets.emplace_back(cellIdx, idx, coeff);
+        return uEqn;
+    };
 
-        m_U_source.row(cellIdx) =  -Ueqn.bias.transpose();
-    }
-    m_U_matrix.setFromTriplets(triplets.begin(), triplets.end());
+    generateSystemImpl(m_U_matrix, m_U_source, m_mesh.getCellAmount(), uEqnGetter);
+
     m_timers["generating linear systems"].stop();
 }
 
@@ -205,14 +217,10 @@ void SimpleAlgorithm::generateMomentumSystem()
 void SimpleAlgorithm::generatePressureCorrectionSystem()
 {
     m_timers["generating linear systems"].start();
-    Index totalCells = m_mesh.getCellAmount();
-    List<Eigen::Triplet<Scalar>> triplets;
-    auto pCorrBoundaries = getPressureCorrectionBoundaries();
 
-    m_p_matrix.setZero();
-
-    for (Index cellIdx = 0; cellIdx < totalCells; cellIdx++)
-    {               
+    std::function<LinearCombination<Scalar>(Index)> pCorrEqnGetter = 
+    [this, pCorrBoundaries = getPressureCorrectionBoundaries()](Index cellIdx)
+    {
         LinearCombination<Scalar> diffusiveFlux;
         Scalar massFlow = 0;
         for (auto [faceVector, faceIdx] : m_mesh.getCellFaces(cellIdx))
@@ -224,16 +232,15 @@ void SimpleAlgorithm::generatePressureCorrectionSystem()
             massFlow += m_mass_fluxes(faceIdx);
         }
 
-        LinearCombination<Scalar> Peqn;
-        Peqn -= massFlow;
-        Peqn += diffusiveFlux;
+        LinearCombination<Scalar> pCorrEqn;
+        pCorrEqn -= massFlow;
+        pCorrEqn += diffusiveFlux;
 
-        for (auto [coeff, idx] : Peqn.terms)
-            triplets.emplace_back(cellIdx, idx, coeff);
-        
-        m_p_source(cellIdx) = -Peqn.bias;
-    }
-    m_p_matrix.setFromTriplets(triplets.begin(), triplets.end());
+        return pCorrEqn;
+    };
+    
+    generateSystemImpl(m_p_matrix, m_p_source, m_mesh.getCellAmount(), pCorrEqnGetter);
+
     m_timers["generating linear systems"].stop();
 }
 
@@ -244,6 +251,9 @@ void SimpleAlgorithm::computeVbyA()
     Index totalCells = m_mesh.getCellAmount();
     auto diagonal = m_U_matrix.diagonal();
 
+#ifdef _OPENMP
+    #pragma omp parallel for
+#endif
     for (Index cellIdx = 0; cellIdx < totalCells; cellIdx++)
     {
         m_VbyA(cellIdx) = m_mesh.getCellVolume(cellIdx) / diagonal(cellIdx);
@@ -259,6 +269,9 @@ VectorField SimpleAlgorithm::getVelocityCorrection(ScalarField const& pCorrectio
     auto pCorrBoundaries = getPressureCorrectionBoundaries();
     VectorField uCorrection(totalCells, 3);
 
+#ifdef _OPENMP
+    #pragma omp parallel for
+#endif
     for (Index cellIdx = 0; cellIdx < totalCells; cellIdx++)
         uCorrection.row(cellIdx) = -m_VbyA(cellIdx) * Interpolation::cellGradient(m_mesh, cellIdx, pCorrection, pCorrBoundaries).transpose();
     
@@ -275,6 +288,9 @@ ScalarField SimpleAlgorithm::getMassFluxesCorrection(ScalarField const& pCorrect
     auto pCorrBoundaries = getPressureCorrectionBoundaries();
     ScalarField massFluxesCorrection(totalFaces, 1);
 
+#ifdef _OPENMP
+    #pragma omp parallel for
+#endif
     for (Index cellIdx = 0; cellIdx < totalCells; cellIdx++)
     {
         for (auto [faceVector, faceIdx] : m_mesh.getCellFaces(cellIdx))
@@ -285,6 +301,87 @@ ScalarField SimpleAlgorithm::getMassFluxesCorrection(ScalarField const& pCorrect
     }
     m_timers["explicit field computation"].stop();
     return massFluxesCorrection; 
+}
+
+
+template<class T>
+auto transpose(T vec)
+{
+    return vec.transpose();
+}
+
+template<>
+auto transpose<Scalar>(Scalar value)
+{
+    return Eigen::Matrix<Scalar, 1, 1>(value);
+}
+
+template<class T, class Rhs>
+void generateSystemImpl(SparseMatrix& A, Rhs& rhs, Index size, std::function<LinearCombination<T>(Index)> const& eqnGetter)
+{
+    A.setZero();
+    using Triplet = Eigen::Triplet<Scalar>;
+    List<Triplet> triplets;
+
+    auto cmp = [](Term lhs, Term rhs)
+    {
+        return lhs.idx < rhs.idx;
+    };
+
+#ifdef _OPENMP
+    List<Triplet> threadTriplets;
+    Index numThreads;
+    #pragma omp parallel 
+    #pragma omp single 
+    numThreads = omp_get_num_threads();
+
+    List<Index> sizes(numThreads);
+    List<Index> prefix(numThreads+1, 0);
+
+    #pragma omp parallel private(threadTriplets)
+    {
+        Index threadIdx = omp_get_thread_num();
+        Index workRangeSize  = size / numThreads + bool(threadIdx < size % numThreads);
+        Index workRangeStart = size / numThreads * threadIdx + std::min(threadIdx, size % numThreads);
+
+        for (Index eqnIdx = workRangeStart; eqnIdx < workRangeStart + workRangeSize; eqnIdx++)
+        {
+            auto eqn = eqnGetter(eqnIdx);
+
+            std::sort(eqn.terms.begin(), eqn.terms.end(), cmp);
+            for (auto [coeff, varIdx] : eqn.terms)
+                threadTriplets.emplace_back(eqnIdx, varIdx, coeff);
+
+            rhs.row(eqnIdx) = -transpose(eqn.bias);
+        }
+        #pragma omp barrier
+        sizes[threadIdx] = threadTriplets.size();
+        #pragma omp barrier
+        
+        #pragma omp single
+        {
+            for (Index idx = 1; idx <= numThreads; idx++)
+                prefix[idx] = prefix[idx-1] + sizes[idx-1];
+            
+            triplets.resize(prefix.back());
+        }
+
+        for (Index idx = 0; idx < sizes[threadIdx]; idx++)
+            triplets[idx + prefix[threadIdx]] = threadTriplets[idx];
+    }
+#else
+    for (Index eqnIdx = 0; eqnIdx < size; eqnIdx++)
+    {
+        auto eqn = eqnGetter(eqnIdx);
+
+        std::sort(eqn.terms.begin(), eqn.terms.end(), cmp);
+        for (auto [coeff, varIdx] : eqn.terms)
+            triplets.emplace_back(eqnIdx, varIdx, coeff);
+
+        rhs.row(eqnIdx) = -transpose(eqn.bias);
+    }
+#endif
+    A.setFromSortedTriplets(triplets.begin(), triplets.end());
 }
 
 
