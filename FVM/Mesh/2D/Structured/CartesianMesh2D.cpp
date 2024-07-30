@@ -1,179 +1,86 @@
 #include "CartesianMesh2D.h"
 
-CartesianMesh2D::CartesianMesh2D(Index xSize, Index ySize, Scalar xLen, Scalar yLen) : 
-    m_x(xSize), m_y(ySize), m_xlen(xLen), m_ylen(yLen) {}
-
-
-Index CartesianMesh2D::getCellAmount() const
+CartesianMesh2D::CartesianMesh2D(Index xSize, Index ySize, Scalar xLen, Scalar yLen) :
+    m_nx(xSize),
+    m_ny(ySize)
 {
-    return m_x*m_y;
-};
+    Scalar dx = xLen / xSize;
+    Scalar dy = yLen / ySize;
 
-
-List<Index> CartesianMesh2D::getCellNeighbours(Index cellIdx) const
-{
-    auto [xIdx, yIdx] = getLocalIndices(cellIdx);
-    List<Index> Neighbours;
-
-    if (xIdx > 0)
-        Neighbours.push_back(getGlobalIndex(xIdx-1, yIdx));
-    if (xIdx < m_x-1)
-        Neighbours.push_back(getGlobalIndex(xIdx+1, yIdx));
-    if (yIdx > 0)
-        Neighbours.push_back(getGlobalIndex(xIdx, yIdx-1));
-    if (yIdx < m_y-1)
-        Neighbours.push_back(getGlobalIndex(xIdx, yIdx+1));
-
-    return Neighbours;
-}
-
-
-Vector CartesianMesh2D::getCellCentroid(Index cellIdx) const
-{
-    auto [xIdx, yIdx] = getLocalIndices(cellIdx);
-    Scalar xCord = m_xlen/m_x*(2*xIdx+1)/2;
-    Scalar yCord = m_ylen/m_y*(2*yIdx+1)/2;
-    return {xCord, yCord, 0};
-}
-
-
-Scalar CartesianMesh2D::getCellVolume(Index cellIdx) const
-{
-    return m_xlen/m_x * m_ylen/m_y;
-}
-
-
-Index CartesianMesh2D::getFaceAmount() const
-{
-    return 4*getCellAmount();
-}
-
-
-Vector CartesianMesh2D::getFaceCentroid(Index faceIdx) const
-{
-    Index idx  = faceIdx/4;
-    Index side = faceIdx%4;
-    Vector centroid = getCellCentroid(idx);
-
-    Scalar dx = m_xlen/m_x, dy = m_ylen/m_y;
-    switch (side)
-    {
-    case 0:
-        centroid(1) -= dy/2;
-        break;
-    case 1:
-        centroid(0) += dx/2;
-        break;
-    case 2:
-        centroid(1) += dy/2;
-        break;
-    case 3:
-        centroid(0) -= dx/2;
-        break;
-    }
-    return centroid;
-}
-
-
-bool CartesianMesh2D::isBoundaryFace(Index faceIdx) const
-{
-    Index idx = faceIdx/4, side = faceIdx%4;
-    auto [xIdx, yIdx] = getLocalIndices(idx);
-
-    return (xIdx == 0 && side == 3) || (xIdx == m_x-1 && side == 1) || (yIdx == 0 && side == 0) || (yIdx == m_y-1 && side == 2);
-}
-
-
-Array<Index, 2> CartesianMesh2D::getFaceNeighbours(Index faceIdx) const
-{
-    Index cellIdx = faceIdx/4;
-    Index side = faceIdx%4;
-    auto [xIdx, yIdx] = getLocalIndices(cellIdx);
-
-    if      (side == 0) yIdx--;
-    else if (side == 1) xIdx++;
-    else if (side == 2) yIdx++;
-    else if (side == 3) xIdx--;
+    Index totalCells = xSize*ySize;
+    Index totalFaces = 2*xSize*ySize + xSize + ySize;
     
-    return {cellIdx, getGlobalIndex(xIdx, yIdx)};
-}
+    m_cell_volumes = List<Scalar>(totalCells, dx*dy);
+    m_cell_centroids.resize(totalCells);
+    m_cell_faces.resize(totalCells);
+    m_face_neighbors = List<Array<Index, 2>>(totalFaces, {-1,-1});
+    m_face_centroids.resize(totalFaces);
+    m_face_vectors.resize(totalFaces);
 
-
-Vector CartesianMesh2D::getFaceVector(Index faceIdx) const
-{
-    Index side = faceIdx%4;
-    Scalar dx = m_xlen/m_x, dy = m_ylen/m_y;
-
-    switch (side)
+    for (Index y = 0; y < ySize; y++)
     {
-    case 0:
-        return {0,-dx,0};
-    case 1:
-        return {dy,0,0};
-    case 2:
-        return {0,dx,0};
-    default:
-        return {-dy,0,0};
+        for (Index x = 0; x < xSize; x++)
+        {
+            Index cellIdx = y*xSize + x;
+            
+            Index face1 = y*(2*xSize+1) + x;
+            Index face2 = face1 + xSize;
+            Index face3 = face1 + 2*xSize + 1;
+            Index face4 = face2 + 1;
+
+            m_cell_faces[cellIdx] = {face1, face2, face3, face4};
+
+            Vector cellCentroid = {dx*(x+0.5), dy*(y+0.5), 0};
+            m_cell_centroids[cellIdx] = cellCentroid;
+            m_face_centroids[face1] = cellCentroid + Vector{0,-dy/2,0};
+            m_face_centroids[face2] = cellCentroid + Vector{-dx/2,0,0};
+            m_face_centroids[face3] = cellCentroid + Vector{0,dy/2,0};
+            m_face_centroids[face4] = cellCentroid + Vector{dx/2,0,0};
+
+            for (Index faceIdx : m_cell_faces[cellIdx])
+            {
+                if (m_face_neighbors[faceIdx][0] == -1)
+                    m_face_neighbors[faceIdx][0] = cellIdx;
+                else
+                    m_face_neighbors[faceIdx][1] = cellIdx;
+
+                if (faceIdx % (2*xSize+1) < xSize)
+                    m_face_vectors[faceIdx] = {0,dx,0};
+                else
+                    m_face_vectors[faceIdx] = {dy,0,0};
+                
+                if (faceIdx < xSize || (faceIdx-xSize) % (2*xSize+1) == 0)
+                    m_face_vectors[faceIdx] *= -1;
+            }
+        }
     }
-}
-
-
-Boundaries CartesianMesh2D::getFaceBoundary(Index faceIdx) const
-{
-    Index side = faceIdx%4;
-    switch (side)
-    {
-    case 0:
-        return m_boundaries.bottom;
-    case 1:
-        return m_boundaries.right;
-    case 2:
-        return m_boundaries.top;
-    case 3:
-        return m_boundaries.left;
-    }
-    return {};
-}
-
-
-List<MeshBase::CellFace> CartesianMesh2D::getCellFaces(Index cellIdx) const
-{
-    Scalar dx = m_xlen/m_x, dy = m_ylen/m_y;
-    return {{{0,-dx,0}, 4*cellIdx}, {{dy,0,0}, 4*cellIdx+1}, {{0,dx,0}, 4*cellIdx+2}, {{-dy,0,0}, 4*cellIdx+3}};
-}
-
-
-Array<Index, 2> CartesianMesh2D::getLocalIndices(Index cellIdx) const
-{
-    return {cellIdx%m_x, cellIdx/m_x};
-}
-
-
-Index CartesianMesh2D::getGlobalIndex(Index xIdx, Index yIdx) const
-{
-    return yIdx*m_x + xIdx;
 }
 
 
 void CartesianMesh2D::setTopBoundary(Boundaries boundaries)
 {
-    m_boundaries.top = boundaries;
+    for (Index faceIdx = 0; faceIdx < m_nx; faceIdx++)
+        m_boundaries_map[faceIdx] = boundaries;
 }
 
 
 void CartesianMesh2D::setBottomBoundary(Boundaries boundaries)
 {
-    m_boundaries.bottom = boundaries;
+    Index totalFaces = getFaceAmount();
+    for (Index faceIdx = totalFaces-1; faceIdx >= totalFaces - m_nx; faceIdx--)
+        m_boundaries_map[faceIdx] = boundaries;
 }
 
 
 void CartesianMesh2D::setLeftBoundary(Boundaries boundaries)
 {
-    m_boundaries.left = boundaries;
-}
+    for (Index faceIdx = m_nx; faceIdx < getFaceAmount(); faceIdx += 2*m_nx+1)
+        m_boundaries_map[faceIdx] = boundaries;
+}   
 
 
 void CartesianMesh2D::setRightBoundary(Boundaries boundaries)
 {
-    m_boundaries.right = boundaries;
+    for (Index faceIdx = 2*m_nx; faceIdx < getFaceAmount(); faceIdx += 2*m_nx+1)
+        m_boundaries_map[faceIdx] = boundaries;
 }

@@ -50,7 +50,9 @@ bool SimpleAlgorithm::converged()
 
 void SimpleAlgorithm::solveMomentum()
 {
+    m_timers["generating linear systems"].start();
     generateMomentumSystem();
+    m_timers["generating linear systems"].stop();
 
     relaxSystem(m_U_matrix, m_U_source, m_U, Config::uRelax);
 
@@ -66,7 +68,9 @@ void SimpleAlgorithm::solveMomentum()
 
 void SimpleAlgorithm::correctPressure()
 {
+    m_timers["generating linear systems"].start();
     generatePressureCorrectionSystem();
+    m_timers["generating linear systems"].stop();
 
     m_timers["solving linear systems"].start();
     ScalarField pCorrection = solveSystem(m_p_matrix, m_p_source);
@@ -123,10 +127,12 @@ void SimpleAlgorithm::initFields()
     auto uBoundaries = getVelocityBoundaries();
     for (Index cellIdx = 0; cellIdx < totalCells; cellIdx++)
     {
-        for (auto [faceVector, faceIdx] : m_mesh.getCellFaces(cellIdx))
+        for (Index faceIdx : m_mesh.getCellFaces(cellIdx))
         {
-            Vector faceVelocity = Interpolation::valueOnFace(m_mesh, faceIdx, uBoundaries).evaluate(m_U);
-            m_mass_fluxes(faceIdx) = faceVelocity.dot(faceVector) * Config::density;
+            if (m_mesh.isBoundaryFace(faceIdx) && m_mesh.getFaceBoundary(faceIdx).uBoundary.type == BoundaryConditionType::FIXED_VALUE)
+                m_mass_fluxes(faceIdx) = m_mesh.getFaceBoundary(faceIdx).uBoundary.value.dot(m_mesh.getFaceVector(faceIdx)) * Config::density;
+            else
+                m_mass_fluxes(faceIdx) = 0;
         }
     }
 }
@@ -152,47 +158,30 @@ void SimpleAlgorithm::computePressureGradient()
 void SimpleAlgorithm::computeMassFluxes()
 {
     m_timers["explicit field computation"].start();
-    Index totalCells = m_mesh.getCellAmount();
+    Index totalFaces = m_mesh.getFaceAmount();
     auto pBoundaries = getPressureBoundaries();
     auto uBoundaries = getVelocityBoundaries();
     
 #ifdef _OPENMP
     #pragma omp parallel for
 #endif
-    for (Index cellIdx = 0; cellIdx < totalCells; cellIdx++)
+    for (Index faceIdx = 0; faceIdx < totalFaces; faceIdx++)
     {
-        for (auto [faceVector, faceIdx] : m_mesh.getCellFaces(cellIdx))
-        {
-            Scalar VbyAf = Interpolation::valueOnFace(m_mesh, faceIdx, zeroGrad<Scalar>()).evaluate(m_VbyA);
-            
-            Vector faceVelocity = Interpolation::valueOnFace(m_mesh, faceIdx, uBoundaries).evaluate(m_U);
-
-            if (m_mesh.isBoundaryFace(faceIdx) == false)
-            {
-                Scalar faceNormalGradient = Interpolation::faceNormalGradient(m_mesh, cellIdx, faceIdx, pBoundaries).evaluate(m_p);
-                Vector avgFaceGradient = Interpolation::valueOnFace(m_mesh, faceIdx, zeroGrad<Vector>()).evaluate(m_p_grad);
-                // correction
-                Vector unitNormal = faceVector / faceVector.norm();
-                Vector velocityCorrection = -VbyAf * (faceNormalGradient - avgFaceGradient.dot(unitNormal))*unitNormal;
-                
-                faceVelocity += velocityCorrection;
-            }
-            
-            m_mass_fluxes(faceIdx) = faceVelocity.dot(faceVector) * Config::density;
-        }
+        Vector faceVector = m_mesh.getFaceVector(faceIdx);
+        Vector faceVelocity = Interpolation::RhieChowVelocityOnFace(m_mesh, faceIdx, m_U, m_p, m_p_grad, m_VbyA, uBoundaries, pBoundaries);
+        m_mass_fluxes(faceIdx) = faceVelocity.dot(faceVector) * Config::density;
     }
+
     m_timers["explicit field computation"].stop();
 }
 
 
 template<class T, class Rhs>
-void generateSystemImpl(SparseMatrix&, Rhs&, Index size, std::function<LinearCombination<T>(Index)> const&);
+void generateSparseSystemImpl(SparseMatrix&, Rhs&, Index size, std::function<LinearCombination<T>(Index)> const&);
 
 
 void SimpleAlgorithm::generateMomentumSystem()
 {
-    m_timers["generating linear systems"].start();
-
     std::function<LinearCombination<Vector>(Index)> uEqnGetter = 
     [this, uBoundaries = getVelocityBoundaries()](Index cellIdx)
     {
@@ -203,33 +192,34 @@ void SimpleAlgorithm::generateMomentumSystem()
         LinearCombination<Vector> uEqn;
         uEqn += convection;
         uEqn -= diffusion;
-        uEqn += pressureGradient;  
+        uEqn += pressureGradient;
 
         return uEqn;
     };
 
-    generateSystemImpl(m_U_matrix, m_U_source, m_mesh.getCellAmount(), uEqnGetter);
-
-    m_timers["generating linear systems"].stop();
+    generateSparseSystemImpl(m_U_matrix, m_U_source, m_mesh.getCellAmount(), uEqnGetter);
 }
 
 
 void SimpleAlgorithm::generatePressureCorrectionSystem()
 {
-    m_timers["generating linear systems"].start();
-
     std::function<LinearCombination<Scalar>(Index)> pCorrEqnGetter = 
     [this, pCorrBoundaries = getPressureCorrectionBoundaries()](Index cellIdx)
     {
         LinearCombination<Scalar> diffusiveFlux;
         Scalar massFlow = 0;
-        for (auto [faceVector, faceIdx] : m_mesh.getCellFaces(cellIdx))
+        for (Index faceIdx : m_mesh.getCellFaces(cellIdx))
         {
+            Vector faceVector = m_mesh.getFaceVector(faceIdx);
             Scalar VbyAf = Interpolation::valueOnFace(m_mesh, faceIdx, zeroGrad<Scalar>()).evaluate(m_VbyA);
             
             diffusiveFlux += VbyAf *Config::density * faceVector.norm() * Interpolation::faceNormalGradient(m_mesh, cellIdx, faceIdx, pCorrBoundaries);
 
-            massFlow += m_mass_fluxes(faceIdx);
+            Scalar massFlux = m_mass_fluxes(faceIdx);
+            if (cellIdx != m_mesh.getFaceOwner(faceIdx))
+                massFlux *= -1;
+
+            massFlow += massFlux;
         }
 
         LinearCombination<Scalar> pCorrEqn;
@@ -239,9 +229,7 @@ void SimpleAlgorithm::generatePressureCorrectionSystem()
         return pCorrEqn;
     };
     
-    generateSystemImpl(m_p_matrix, m_p_source, m_mesh.getCellAmount(), pCorrEqnGetter);
-
-    m_timers["generating linear systems"].stop();
+    generateSparseSystemImpl(m_p_matrix, m_p_source, m_mesh.getCellAmount(), pCorrEqnGetter);
 }
 
 
@@ -283,7 +271,6 @@ VectorField SimpleAlgorithm::getVelocityCorrection(ScalarField const& pCorrectio
 ScalarField SimpleAlgorithm::getMassFluxesCorrection(ScalarField const& pCorrection)
 {
     m_timers["explicit field computation"].start();
-    Index totalCells = m_mesh.getCellAmount();
     Index totalFaces = m_mesh.getFaceAmount();
     auto pCorrBoundaries = getPressureCorrectionBoundaries();
     ScalarField massFluxesCorrection(totalFaces, 1);
@@ -291,13 +278,11 @@ ScalarField SimpleAlgorithm::getMassFluxesCorrection(ScalarField const& pCorrect
 #ifdef _OPENMP
     #pragma omp parallel for
 #endif
-    for (Index cellIdx = 0; cellIdx < totalCells; cellIdx++)
+    for (Index faceIdx = 0; faceIdx < totalFaces; faceIdx++)
     {
-        for (auto [faceVector, faceIdx] : m_mesh.getCellFaces(cellIdx))
-        {
-            Scalar VbyAf = Interpolation::valueOnFace(m_mesh, faceIdx, zeroGrad<Scalar>()).evaluate(m_VbyA);
-            massFluxesCorrection(faceIdx) = -Config::density * VbyAf * Interpolation::faceNormalGradient(m_mesh, cellIdx, faceIdx, pCorrBoundaries).evaluate(pCorrection);
-        }
+        Index ownerIdx = m_mesh.getFaceOwner(faceIdx);
+        Scalar VbyAf = Interpolation::valueOnFace(m_mesh, faceIdx, zeroGrad<Scalar>()).evaluate(m_VbyA);
+        massFluxesCorrection(faceIdx) = -Config::density * VbyAf * Interpolation::faceNormalGradient(m_mesh, ownerIdx, faceIdx, pCorrBoundaries).evaluate(pCorrection);
     }
     m_timers["explicit field computation"].stop();
     return massFluxesCorrection; 
@@ -317,7 +302,7 @@ auto transpose<Scalar>(Scalar value)
 }
 
 template<class T, class Rhs>
-void generateSystemImpl(SparseMatrix& A, Rhs& rhs, Index size, std::function<LinearCombination<T>(Index)> const& eqnGetter)
+void generateSparseSystemImpl(SparseMatrix& A, Rhs& rhs, Index size, std::function<LinearCombination<T>(Index)> const& eqnGetter)
 {
     A.setZero();
     using Triplet = Eigen::Triplet<Scalar>;

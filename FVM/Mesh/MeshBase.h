@@ -9,26 +9,39 @@ class MeshBase
 public:
 
     // cells
-    virtual Index getCellAmount() const = 0;
-    virtual List<Index> getCellNeighbours(Index cellIdx) const = 0;
-    virtual Vector getCellCentroid(Index cellIdx) const = 0;
-    virtual Scalar getCellVolume(Index cellIdx) const  = 0;
+    Index  getCellAmount() const;
+
+    Vector getCellCentroid(Index cellIdx) const;
+
+    Scalar getCellVolume(Index cellIdx) const;
 
     //faces
-    virtual Index getFaceAmount() const = 0;
-    virtual Vector getFaceCentroid(Index faceIdx) const = 0;
-    virtual bool isBoundaryFace(Index faceIdx) const = 0;
-    virtual Array<Index, 2> getFaceNeighbours(Index faceIdx) const = 0;
-    virtual Vector getFaceVector(Index faceIdx) const = 0;
-    virtual Boundaries getFaceBoundary(Index faceIdx) const = 0;
+    Index           getFaceAmount() const;
 
-    class CellFace
-    {
-    public:
-        Vector faceVector;
-        Index faceIdx;
-    };
-    virtual List<CellFace> getCellFaces(Index cellIdx) const = 0;
+    Vector          getFaceCentroid(Index faceIdx) const;
+
+    bool            isBoundaryFace(Index faceIdx) const;
+
+    Array<Index, 2> getFaceNeighbours(Index faceIdx) const;
+
+    Vector          getFaceVector(Index faceIdx) const;
+
+    Boundaries      getFaceBoundary(Index faceIdx) const;
+
+    Index           getFaceOwner(Index faceIdx) const;
+
+    List<Index>     getCellFaces(Index cellIdx) const;
 
     virtual ~MeshBase() = default;
+
+protected:
+
+    List<Vector>         m_cell_centroids;
+    List<Scalar>         m_cell_volumes;
+    List<List<Index>>    m_cell_faces;
+    List<Vector>         m_face_vectors;
+    List<Vector>         m_face_centroids;
+    List<Array<Index,2>> m_face_neighbors;
+
+    HashMap<Index, Boundaries> m_boundaries_map;
 };

@@ -10,6 +10,7 @@ set(SOURCES
     Utils/MatrixSolver.cpp
     Utils/Timer.cpp
 
+    Mesh/MeshBase.cpp
     Mesh/Geometry.cpp
     Mesh/2D/Structured/CartesianMesh2D.cpp
     Mesh/2D/Unstructured/PolyMesh2D.cpp
@@ -46,7 +47,8 @@ set(HEADERS
 
 set(CMAKE_CXX_STANDARD 20)
 
-set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -march=native -O2 -Wall")
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -Wall -Wextra -Wpedantic")
+set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -march=native")
 
 set(TARGET_NAME fvm_test)
 add_executable(${TARGET_NAME} ${SOURCES} ${HEADERS})

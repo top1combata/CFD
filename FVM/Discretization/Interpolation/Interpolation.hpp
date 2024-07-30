@@ -1,11 +1,21 @@
 #include "Mesh/Geometry.h"
 
 
-inline Vector Interpolation::cellGradient(MeshBase const& mesh, Index cellIdx, ScalarField const& field, BoundaryConditionGetter<Scalar> const& boundaries)
+inline Vector Interpolation::cellGradient
+(
+    MeshBase const& mesh, 
+    Index cellIdx, 
+    ScalarField const& field, 
+    BoundaryConditionGetter<Scalar> const& boundaries
+)
 {
-    Vector gradient(0,0,0);
-    for (auto [faceVector, faceIdx] : mesh.getCellFaces(cellIdx))
+    Vector gradient{0,0,0};
+    for (Index faceIdx : mesh.getCellFaces(cellIdx))
     {
+        Vector faceVector = mesh.getFaceVector(faceIdx);
+        if (cellIdx != mesh.getFaceOwner(faceIdx))
+            faceVector *= -1;
+            
         gradient += faceVector * valueOnFace(mesh, faceIdx, boundaries).evaluate(field);
     }
 
@@ -14,11 +24,17 @@ inline Vector Interpolation::cellGradient(MeshBase const& mesh, Index cellIdx, S
 
 
 template<class T>
-LinearCombination<T> Interpolation::diffusionFluxOverCell(MeshBase const& mesh, Index cellIdx, BoundaryConditionGetter<T> const& boundaries)
+LinearCombination<T> Interpolation::diffusionFluxOverCell
+(
+    MeshBase const& mesh, 
+    Index cellIdx, 
+    BoundaryConditionGetter<T> const& boundaries
+)
 {
     LinearCombination<T> flux;
-    for (auto [faceVector, faceIdx] : mesh.getCellFaces(cellIdx))
+    for (Index faceIdx : mesh.getCellFaces(cellIdx))
     {
+        Vector faceVector = mesh.getFaceVector(faceIdx);
         flux += faceNormalGradient(mesh, cellIdx, faceIdx, boundaries) * faceVector.norm();
     }
     return flux;
@@ -26,21 +42,29 @@ LinearCombination<T> Interpolation::diffusionFluxOverCell(MeshBase const& mesh, 
 
 
 template<class T>
-LinearCombination<T> Interpolation::convectionFluxOverCell(MeshBase const& mesh, Index cellIdx, BoundaryConditionGetter<T> const& boundaries, ScalarField const& massFlow)
+LinearCombination<T> Interpolation::convectionFluxOverCell
+(
+    MeshBase const& mesh, 
+    Index cellIdx, 
+    BoundaryConditionGetter<T> const& boundaries, 
+    ScalarField const& massFlow
+)
 {
     LinearCombination<T> flux;
 
-    for (auto [faceVector, faceIdx] : mesh.getCellFaces(cellIdx))
+    for (Index faceIdx : mesh.getCellFaces(cellIdx))
     {
         Scalar massFlux = massFlow(faceIdx);
 
-        auto [nb1, nb2] = mesh.getFaceNeighbours(faceIdx);
+        auto [ownerIdx, neighbourIdx] = mesh.getFaceNeighbours(faceIdx);
         
         LinearCombination<T> implicitVelocity = {{1,1}};
-        implicitVelocity.terms[0].idx = ((cellIdx == nb1) ^ (massFlux > 0) ? nb2 : nb1);
+        implicitVelocity.terms[0].idx = (massFlux > 0 ? ownerIdx : neighbourIdx);
         if (mesh.isBoundaryFace(faceIdx))
             implicitVelocity = valueOnFace(mesh, faceIdx, boundaries);
         
+        if (cellIdx != ownerIdx)
+            massFlux *= -1;
         flux += massFlux * implicitVelocity;
     }
 
@@ -49,7 +73,12 @@ LinearCombination<T> Interpolation::convectionFluxOverCell(MeshBase const& mesh,
 
 
 template<class T>
-LinearCombination<T> Interpolation::valueOnFace(MeshBase const& mesh, Index faceIdx, BoundaryConditionGetter<T> const& boundaries)
+LinearCombination<T> Interpolation::valueOnFace
+(
+    MeshBase const& mesh, 
+    Index faceIdx, 
+    BoundaryConditionGetter<T> const& boundaries
+)
 {
     if (mesh.isBoundaryFace(faceIdx))
     {
@@ -86,7 +115,13 @@ LinearCombination<T> Interpolation::valueOnFace(MeshBase const& mesh, Index face
 
 
 template<class T>
-LinearCombination<T> Interpolation::faceNormalGradient(MeshBase const& mesh, Index cellFromIdx, Index faceIdx, BoundaryConditionGetter<T> const& boundaries)
+LinearCombination<T> Interpolation::faceNormalGradient
+(
+    MeshBase const& mesh, 
+    Index cellFromIdx, 
+    Index faceIdx,
+    BoundaryConditionGetter<T> const& boundaries
+)
 {
     if (mesh.isBoundaryFace(faceIdx))
     {
@@ -115,4 +150,35 @@ LinearCombination<T> Interpolation::faceNormalGradient(MeshBase const& mesh, Ind
 
     Scalar dist = Geometry::distanceCellToCell(mesh, cellFromIdx, cellToIdx);
     return {{1/dist, cellToIdx}, {-1/dist, cellFromIdx}};
+}
+
+
+inline Vector Interpolation::RhieChowVelocityOnFace
+(
+    MeshBase const& mesh, 
+    Index faceIdx, 
+    VectorField const& U,
+    ScalarField const& p,
+    VectorField const& pGrad,
+    ScalarField const& VbyA,
+    BoundaryConditionGetter<Vector> const& uBoundaries,
+    BoundaryConditionGetter<Scalar> const& pBoundaries    
+)
+{
+    Vector faceVelocity = valueOnFace(mesh, faceIdx, uBoundaries).evaluate(U);
+    
+    if (mesh.isBoundaryFace(faceIdx))
+        return faceVelocity;
+
+    Scalar VbyA_f = valueOnFace(mesh, faceIdx, zeroGrad<Scalar>()).evaluate(VbyA);
+
+    Index cellIdx = mesh.getFaceOwner(faceIdx);
+    Scalar faceNormalGrad = faceNormalGradient(mesh, cellIdx, faceIdx, pBoundaries).evaluate(p);
+    Vector avgFaceGradient = valueOnFace(mesh, faceIdx, zeroGrad<Vector>()).evaluate(pGrad);
+    // correction
+    Vector faceVector = mesh.getFaceVector(faceIdx);
+    Vector unitNormal = faceVector / faceVector.norm();
+    Vector velocityCorrection = -VbyA_f * (faceNormalGrad - avgFaceGradient.dot(unitNormal))*unitNormal;
+    
+    return faceVelocity + velocityCorrection;
 }
