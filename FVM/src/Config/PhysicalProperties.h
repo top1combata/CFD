@@ -7,5 +7,5 @@ namespace Config
 {
     constexpr Scalar density = 1e3;
     
-    constexpr Scalar viscosity = 1e-1;
+    constexpr Scalar viscosity = 1;
 }

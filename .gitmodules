@@ -1,3 +1,3 @@
-[submodule "FVM/Eigen"]
-	path = FVM/Eigen
+[submodule "FVM/src/Eigen"]
+	path = FVM/src/Eigen
 	url = https://gitlab.com/libeigen/eigen/

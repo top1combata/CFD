@@ -20,7 +20,7 @@ using HashMap = std::unordered_map<K, V, Hash, Equal>;
 
 
 
-using Scalar = float;
+using Scalar = double;
 
 using Vector = Eigen::Matrix<Scalar, 3, 1>;
 
