@@ -12,3 +12,4 @@ set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -march=native")
 set(LIBRARY_NAME ${PROJECT_NAME})
 
 add_subdirectory(src)
+add_subdirectory(test)
