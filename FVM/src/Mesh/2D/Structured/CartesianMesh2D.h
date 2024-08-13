@@ -19,7 +19,7 @@ public:
     
     void setRightBoundary(Boundaries boundaries);
 
-private:
+protected:
 
     Index m_nx;
     Index m_ny;

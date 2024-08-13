@@ -10,4 +10,5 @@ class PolyMesh2D : public MeshBase
 public:
 
     PolyMesh2D(std::istream& stream);
+    PolyMesh2D(std::istream&& stream) : PolyMesh2D(stream) {}
 };
