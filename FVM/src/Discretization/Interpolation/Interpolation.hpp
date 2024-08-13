@@ -56,7 +56,7 @@ LinearCombination<T> Interpolation::convectionFluxOverCell
     {
         Scalar massFlux = massFlow(faceIdx);
 
-        auto [ownerIdx, neighbourIdx] = mesh.getFaceNeighbours(faceIdx);
+        auto [ownerIdx, neighbourIdx] = mesh.getFaceNeighbors(faceIdx);
         
         LinearCombination<T> implicitVelocity = {{1,1}};
         implicitVelocity.terms[0].idx = (massFlux > 0 ? ownerIdx : neighbourIdx);
@@ -92,7 +92,7 @@ LinearCombination<T> Interpolation::valueOnFace
             return boundaryValue;
 
         case FIXED_GRADIENT:
-            Index cellIdx = mesh.getFaceNeighbours(faceIdx).front();
+            Index cellIdx = mesh.getFaceNeighbors(faceIdx).front();
             Scalar dist = Geometry::distanceCellToFace(mesh, cellIdx, faceIdx);
 
             LinearCombination<T> result;
@@ -104,7 +104,7 @@ LinearCombination<T> Interpolation::valueOnFace
     }
 
     // general case
-    auto [cellIdx1, cellIdx2] = mesh.getFaceNeighbours(faceIdx);
+    auto [cellIdx1, cellIdx2] = mesh.getFaceNeighbors(faceIdx);
     Scalar dist1 = Geometry::distanceCellToFace(mesh, cellIdx1, faceIdx);
     Scalar dist2 = Geometry::distanceCellToFace(mesh, cellIdx2, faceIdx);
 
@@ -145,7 +145,7 @@ LinearCombination<T> Interpolation::faceNormalGradient
     }
 
     // general case
-    auto [tmpIdx1, tmpIdx2] = mesh.getFaceNeighbours(faceIdx);
+    auto [tmpIdx1, tmpIdx2] = mesh.getFaceNeighbors(faceIdx);
     Index cellToIdx = (tmpIdx1 == cellFromIdx ? tmpIdx2 : tmpIdx1);
 
     Scalar dist = Geometry::distanceCellToCell(mesh, cellFromIdx, cellToIdx);

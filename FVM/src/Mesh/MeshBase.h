@@ -22,7 +22,7 @@ public:
 
     bool            isBoundaryFace(Index faceIdx) const;
 
-    Array<Index, 2> getFaceNeighbours(Index faceIdx) const;
+    Array<Index, 2> getFaceNeighbors(Index faceIdx) const;
 
     Vector          getFaceVector(Index faceIdx) const;
 

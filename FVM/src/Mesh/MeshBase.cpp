@@ -37,7 +37,7 @@ bool MeshBase::isBoundaryFace(Index faceIdx) const
 }
 
 
-Array<Index, 2> MeshBase::getFaceNeighbours(Index faceIdx) const
+Array<Index, 2> MeshBase::getFaceNeighbors(Index faceIdx) const
 {
     return m_face_neighbors[faceIdx];
 }
