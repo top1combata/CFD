@@ -1,30 +1,32 @@
 #include "Mesh/Geometry.h"
 
 
-inline Vector Interpolation::cellGradient
+template<class T>
+LinearCombination<T, Vector> Interpolation::cellGradient
 (
     MeshBase const& mesh, 
-    Index cellIdx, 
-    ScalarField const& field, 
-    BoundaryConditionGetter<Scalar> const& boundaries
+    Index cellIdx,
+    BoundaryConditionGetter<T> const& boundaries
 )
 {
-    Vector gradient{0,0,0};
+    LinearCombination<T, Vector> gradient;
+
     for (Index faceIdx : mesh.getCellFaces(cellIdx))
     {
         Vector faceVector = mesh.getFaceVector(faceIdx);
         if (cellIdx != mesh.getFaceOwner(faceIdx))
             faceVector *= -1;
             
-        gradient += faceVector * valueOnFace(mesh, faceIdx, boundaries).evaluate(field);
+        gradient += faceVector * valueOnFace(mesh, faceIdx, boundaries);
     }
+    gradient /= mesh.getCellVolume(cellIdx);
 
-    return 1/mesh.getCellVolume(cellIdx) * gradient;
+    return gradient;
 }
 
 
 template<class T>
-LinearCombination<T> Interpolation::diffusionFluxOverCell
+LinearCombination<T, Scalar> Interpolation::diffusionFluxOverCell
 (
     MeshBase const& mesh, 
     Index cellIdx, 
@@ -42,12 +44,12 @@ LinearCombination<T> Interpolation::diffusionFluxOverCell
 
 
 template<class T>
-LinearCombination<T> Interpolation::convectionFluxOverCell
+LinearCombination<T, Scalar> Interpolation::convectionFluxOverCell
 (
     MeshBase const& mesh, 
     Index cellIdx, 
     BoundaryConditionGetter<T> const& boundaries, 
-    ScalarField const& massFlow
+    Field<Scalar> const& massFlow
 )
 {
     LinearCombination<T> flux;
@@ -73,7 +75,7 @@ LinearCombination<T> Interpolation::convectionFluxOverCell
 
 
 template<class T>
-LinearCombination<T> Interpolation::valueOnFace
+LinearCombination<T, Scalar> Interpolation::valueOnFace
 (
     MeshBase const& mesh, 
     Index faceIdx, 
@@ -89,15 +91,14 @@ LinearCombination<T> Interpolation::valueOnFace
         switch (boundaryType)
         {
         case FIXED_VALUE:
-            return boundaryValue;
+            return LinearCombination<T, Scalar>(boundaryValue);
 
         case FIXED_GRADIENT:
             Index cellIdx = mesh.getFaceNeighbors(faceIdx).front();
             Scalar dist = Geometry::distanceCellToFace(mesh, cellIdx, faceIdx);
 
-            LinearCombination<T> result;
+            LinearCombination<T> result = {{1, cellIdx}};
             result += dist*boundaryValue;
-            result += {{1, cellIdx}};
             return  result;
         }
 
@@ -115,7 +116,7 @@ LinearCombination<T> Interpolation::valueOnFace
 
 
 template<class T>
-LinearCombination<T> Interpolation::faceNormalGradient
+LinearCombination<T, Scalar> Interpolation::faceNormalGradient
 (
     MeshBase const& mesh, 
     Index cellFromIdx, 
@@ -132,14 +133,13 @@ LinearCombination<T> Interpolation::faceNormalGradient
         switch (boundaryType)
         {
         case FIXED_GRADIENT:
-            return boundaryValue;
+            return LinearCombination<T, Scalar>(boundaryValue);
         
         case FIXED_VALUE:
             Scalar dist = Geometry::distanceCellToFace(mesh, cellFromIdx, faceIdx);
 
-            LinearCombination<T> result;
+            LinearCombination<T> result = {{-1/dist, cellFromIdx}};
             result += boundaryValue / dist;
-            result -= {{1/dist, cellFromIdx}};
             return result;
         }
     }
@@ -153,16 +153,16 @@ LinearCombination<T> Interpolation::faceNormalGradient
 }
 
 
-inline Vector Interpolation::RhieChowVelocityOnFace
+static Vector Interpolation::RhieChowVelocityOnFace
 (
-    MeshBase const& mesh, 
-    Index faceIdx, 
-    VectorField const& U,
-    ScalarField const& p,
-    VectorField const& pGrad,
-    ScalarField const& VbyA,
+    MeshBase const& mesh,
+    Index faceIdx,
+    Field<Vector> const& U,
+    Field<Scalar> const& p,
+    Field<Vector> const& pGrad,
+    Field<Scalar> const& VbyA,
     BoundaryConditionGetter<Vector> const& uBoundaries,
-    BoundaryConditionGetter<Scalar> const& pBoundaries    
+    BoundaryConditionGetter<Scalar> const& pBoundaries
 )
 {
     Vector faceVelocity = valueOnFace(mesh, faceIdx, uBoundaries).evaluate(U);

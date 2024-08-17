@@ -7,59 +7,59 @@
 namespace Interpolation
 {
 
-inline Vector cellGradient
+template<class T>
+LinearCombination<T, Vector> cellGradient
 (
     MeshBase const& mesh, 
     Index cellIdx, 
-    ScalarField const& field, 
-    BoundaryConditionGetter<Scalar> const& boundaries
+    BoundaryConditionGetter<T> const& boundaries
 );
 
 
-inline Vector RhieChowVelocityOnFace
+static Vector RhieChowVelocityOnFace
 (
-    MeshBase const& mesh, 
+    MeshBase const& mesh,
     Index faceIdx,
-    VectorField const& U,
-    ScalarField const& p,
-    VectorField const& pGrad,
-    ScalarField const& VbyA,
+    Field<Vector> const& U,
+    Field<Scalar> const& p,
+    Field<Vector> const& pGrad,
+    Field<Scalar> const& VbyA,
     BoundaryConditionGetter<Vector> const& uBoundaries,
     BoundaryConditionGetter<Scalar> const& pBoundaries
 );
 
 
 template<class T>
-LinearCombination<T> valueOnFace
+LinearCombination<T, Scalar> valueOnFace
 (
     MeshBase const& mesh, 
-    Index faceIdx, 
+    Index faceIdx,
     BoundaryConditionGetter<T> const& boundaries
 );
 
 
 template<class T>
-LinearCombination<T> faceNormalGradient
+LinearCombination<T, Scalar> faceNormalGradient
 (
     MeshBase const& mesh, 
     Index cellFromIdx,
-    Index faceIdx, 
+    Index faceIdx,
     BoundaryConditionGetter<T> const& boundaries
 );
 
 
 template<class T>
-LinearCombination<T> convectionFluxOverCell
+LinearCombination<T, Scalar> convectionFluxOverCell
 (
     MeshBase const& mesh, 
     Index cellIdx, 
     BoundaryConditionGetter<T> const& boundaries, 
-    ScalarField const& massFlow
+    Field<Scalar> const& massFlow
 );
 
 
 template<class T>
-LinearCombination<T> diffusionFluxOverCell
+LinearCombination<T, Scalar> diffusionFluxOverCell
 (
     MeshBase const& mesh, 
     Index cellIdx, 

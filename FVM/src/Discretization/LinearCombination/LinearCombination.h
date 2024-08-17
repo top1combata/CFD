@@ -3,72 +3,83 @@
 #include "Utils/Types.h"
 #include "Utils/TypesOperations.h"
 
+template<class CoeffType>
 class Term
 {
 public:
 
-    Scalar coeff;
+    CoeffType coeff;
     Index idx;
-
-    bool operator==(Term another) const
-    {
-        return idx == another.idx;
-    }
 };
 
 
-template<class T>
+template<class VarType, class CoeffType = Scalar>
 class LinearCombination
 {
 public:
 
-    List<Term> terms;
-    T bias = zero<T>();
+    using BiasType = ProductType<VarType, CoeffType>::type;
+
+    List<Term<CoeffType>> terms;
+    BiasType bias = zero<BiasType>();
 
     LinearCombination() = default;
 
-    template<typename U> requires std::convertible_to<U,T>
-    LinearCombination(U value);
+    explicit LinearCombination(BiasType const& value) : bias(value) {}
 
-    LinearCombination(std::initializer_list<Term> const& lst);
+    LinearCombination(std::initializer_list<Term<CoeffType>> const&);
 
+    LinearCombination& operator+=(BiasType const& value);
 
-    LinearCombination& operator+=(LinearCombination const& rhs);
+    LinearCombination& operator-=(BiasType const& value);
 
-    LinearCombination& operator-=(LinearCombination const& rhs);
+    LinearCombination& operator+=(Term<CoeffType> const&);
 
-    template<class Field>
-    T evaluate(Field const& field) const 
-    requires requires(Field field, Index idx)
-    {
-        getFieldValue(field, idx);
-        {getFieldValue(field, idx)} -> std::same_as<T>;
-    };
+    LinearCombination& operator-=(Term<CoeffType> const&);
 
-private:
+    LinearCombination& operator+=(LinearCombination const&);
 
+    LinearCombination& operator-=(LinearCombination const&);
+
+    LinearCombination& operator*=(Scalar);
+
+    LinearCombination& operator/=(Scalar);
+
+    BiasType evaluate(Field<VarType> const&) const;
+
+    LinearCombination<VarType, Scalar> dot(Vector) const
+    requires std::same_as<CoeffType, Vector>;
 };
 
+template<class U, class V>
+LinearCombination<U,V> operator+(LinearCombination<U,V>, LinearCombination<U,V> const&);
 
-template<class T>
-LinearCombination<T> operator+(LinearCombination<T> lhs, LinearCombination<T> const& rhs);
+template<class U, class V>
+LinearCombination<U,V> operator+(LinearCombination<U,V>, typename LinearCombination<U,V>::BiasType const&);
 
-template<class T>
-LinearCombination<T> operator-(LinearCombination<T> lhs, LinearCombination<T> const& rhs);
+template<class U, class V>
+LinearCombination<U,V> operator+(typename LinearCombination<U,V>::BiasType const&, LinearCombination<U,V>);
 
-template<class T>
-LinearCombination<T> operator-(LinearCombination<T> lc);
+template<class U, class V>
+LinearCombination<U,V> operator-(LinearCombination<U,V>, LinearCombination<U,V> const&);
 
-template<class T>
-LinearCombination<T>& operator*=(LinearCombination<T>& lhs, Scalar rhs);
+template<class U, class V>
+LinearCombination<U,V> operator-(LinearCombination<U,V>, typename LinearCombination<U,V>::BiasType const&);
 
-template<class T>
-LinearCombination<T> operator*(LinearCombination<T> lhs, Scalar rhs);
+template<class U, class V>
+LinearCombination<U,V> operator-(typename LinearCombination<U,V>::BiasType const&, LinearCombination<U,V>);
 
-template<class T>
-LinearCombination<T> operator*(Scalar lhs, LinearCombination<T> rhs);
+template<class U, class V>
+LinearCombination<U,V> operator-(LinearCombination<U,V>);
 
-template<class T>
-std::ostream& operator<<(std::ostream& os, LinearCombination<T> const& lc);
+template<class U, class V>
+LinearCombination<U,V> operator*(LinearCombination<U,V>, Scalar);
 
-#include "LinearCombination.hpp"
+template<class U, class V>
+LinearCombination<U,V> operator*(Scalar, LinearCombination<U,V>);
+
+
+LinearCombination<Scalar, Vector> operator*(LinearCombination<Scalar, Scalar> const&, Vector);
+LinearCombination<Scalar, Vector> operator*(Vector, LinearCombination<Scalar, Scalar> const&);
+
+LinearCombination<Vector, Vector> operator*(LinearCombination<Vector, Scalar> const&, Vector);

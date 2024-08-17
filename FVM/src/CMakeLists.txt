@@ -9,7 +9,7 @@ set(SOURCES
     Mesh/2D/Unstructured/PolyMesh2D.cpp
     Mesh/2D/Unstructured/Parse.cpp
 
-    Discretization/LinearCombination/LinearCombination.hpp
+    Discretization/LinearCombination/LinearCombination.cpp
     Discretization/Interpolation/Interpolation.hpp
 
     Solvers/SIMPLE/SimpleAlgorithm.cpp
@@ -41,6 +41,11 @@ set(HEADERS
 add_library(${LIBRARY_NAME} ${SOURCES} ${HEADERS})
 
 target_include_directories(${LIBRARY_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+
+target_compile_options(${LIBRARY_NAME} PRIVATE
+    $<$<CONFIG:Debug>:-Wall -Wextra -Wpedantic -Werror -Wextra -Wpedantic>
+    $<$<CONFIG:Release>:-march=native>
+)
 
 # OpenMP
 find_package(OpenMP)
