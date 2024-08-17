@@ -3,10 +3,6 @@
 #include "Types.h"
 
 
-inline Scalar getFieldValue(ScalarField const& field, Index idx) {return field(idx);}
-
-inline Vector getFieldValue(VectorField const& field, Index idx) {return field.row(idx).transpose();}
-
 template<class T>
 T zero() {return static_cast<T>(0);}
 
@@ -14,3 +10,19 @@ template<class T>
 T zero()
 requires requires {{T::Zero()} -> std::convertible_to<T>;}
 {return T::Zero();}
+
+
+template<class U, class V>
+struct ProductType;
+
+template<class U>
+struct ProductType<U, Scalar> {using type = U;};
+
+template<class U>
+struct ProductType<Scalar, U> {using type = U;};
+
+template<>
+struct ProductType<Scalar, Scalar> {using type = Scalar;};
+
+template<>
+struct ProductType<Vector, Vector> {using type = Tensor;};

@@ -24,10 +24,11 @@ using Scalar = double;
 
 using Vector = Eigen::Matrix<Scalar, 3, 1>;
 
+using Tensor = Eigen::Matrix<Scalar, 3, 3>;
+
 using Matrix = Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic>;
 
 using SparseMatrix = Eigen::SparseMatrix<Scalar, Eigen::RowMajor>;
 
-using ScalarField = Eigen::Matrix<Scalar, Eigen::Dynamic, 1>;
-
-using VectorField = Eigen::Matrix<Scalar, Eigen::Dynamic, 3>;
+template<class T>
+using Field = Eigen::Matrix<T, Eigen::Dynamic, 1>;

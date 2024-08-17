@@ -3,8 +3,8 @@
 #include "Types.h"
 
 // only for Matrix and SparseMatrix
-template<class AnyMatrix>
-void relaxSystem(AnyMatrix& A, Matrix& rhs, Matrix const& previousValue, Scalar relaxFactor);
+void relaxSystem(SparseMatrix& A, Matrix& rhs, Field<Scalar> const& previousValue, Scalar relaxFactor);
+void relaxSystem(SparseMatrix& A, Matrix& rhs, Field<Vector> const& previousValue, Scalar relaxFactor);
 
 Matrix solveSystem(Matrix& A, Matrix const& rhs);
 

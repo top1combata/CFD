@@ -13,17 +13,17 @@ public:
 
     void solve();
 
-    VectorField& getU();
-    ScalarField& getP();
+    Field<Vector>& getU();
+    Field<Scalar>& getP();
 
 private:
 
     // fields
-    VectorField m_U;
-    ScalarField m_p;
-    VectorField m_p_grad;
-    ScalarField m_VbyA;
-    ScalarField m_mass_fluxes;
+    Field<Vector> m_U;
+    Field<Scalar> m_p;
+    Field<Vector> m_p_grad;
+    Field<Scalar> m_VbyA;
+    Field<Scalar> m_mass_fluxes;
     // momentum matrix and
     SparseMatrix m_U_matrix;
     Matrix m_U_source;
@@ -33,7 +33,6 @@ private:
 
     HashMap<std::string, Timer> m_timers;
 
-    Scalar m_U_residual = 1;
     Scalar m_p_residual = 1;
 
     // associated mesh
@@ -50,8 +49,8 @@ private:
     void generateMomentumSystem();
     void generatePressureCorrectionSystem();
     void computeVbyA();
-    VectorField getVelocityCorrection(ScalarField const& pCorrection);
-    ScalarField getMassFluxesCorrection(ScalarField const& pCorrection);
+    Field<Vector> getVelocityCorrection(Field<Scalar> const& pCorrection);
+    Field<Scalar> getMassFluxesCorrection(Field<Scalar> const& pCorrection);
 
 
     Scalar relativeResidual(Matrix const& field, Matrix const& correction);

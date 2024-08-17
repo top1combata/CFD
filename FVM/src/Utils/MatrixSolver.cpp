@@ -3,25 +3,39 @@
 #include <Eigen/IterativeLinearSolvers>
 #include <cassert>
 
-template<class AnyMatrix>
-void relaxSystem(AnyMatrix& A, Matrix& rhs, Matrix const& previousValue, Scalar relaxFactor)
+
+void relaxSystem(SparseMatrix& A, Matrix& rhs, Field<Scalar> const& previousValue, Scalar relaxFactor)
 {
     assert(A.cols() == A.rows());
     assert(A.rows() == rhs.rows());
-    assert(rhs.rows() == previousValue.rows() && rhs.cols() == previousValue.cols());
+    assert(rhs.rows() == previousValue.rows() && rhs.cols() == 1);
     assert(relaxFactor > 0);
 
     auto Adiag = A.diagonal();
     
     for (Index idx = 0; idx < A.rows(); idx++)
     {
-        rhs.row(idx) += (1/relaxFactor - 1) * Adiag(idx) * previousValue.row(idx);
+        rhs(idx) += (1/relaxFactor - 1) * Adiag(idx) * previousValue(idx);
         Adiag(idx) /= relaxFactor;
     }
 }
-// explicit instantiation
-template void relaxSystem<Matrix>(Matrix& A, Matrix& rhs, Matrix const& previousValue, Scalar relaxFactor);
-template void relaxSystem<SparseMatrix>(SparseMatrix& A, Matrix& rhs, Matrix const& previousValue, Scalar relaxFactor);
+
+
+void relaxSystem(SparseMatrix& A, Matrix& rhs, Field<Vector> const& previousValue, Scalar relaxFactor)
+{
+    assert(A.cols() == A.rows());
+    assert(A.rows() == rhs.rows());
+    assert(rhs.rows() == previousValue.rows() && rhs.cols() == 3);
+    assert(relaxFactor > 0);
+
+    auto Adiag = A.diagonal();
+    
+    for (Index idx = 0; idx < A.rows(); idx++)
+    {
+        rhs.row(idx) += (1/relaxFactor - 1) * Adiag(idx) * previousValue(idx).transpose();
+        Adiag(idx) /= relaxFactor;
+    }
+}
 
 
 Matrix solveSystem(Matrix& A, Matrix const& rhs)
