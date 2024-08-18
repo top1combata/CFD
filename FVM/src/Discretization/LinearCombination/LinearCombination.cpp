@@ -204,6 +204,13 @@ LinearCombination<U,V> operator*(Scalar lhs, LinearCombination<U,V> rhs)
     return rhs;
 }
 
+template<class U, class V>
+LinearCombination<U,V> operator/(LinearCombination<U,V> lhs, Scalar rhs)
+{
+    lhs /= rhs;
+    return lhs;
+}
+
 
 LinearCombination<Scalar, Vector> operator*(LinearCombination<Scalar, Scalar> const& lc, Vector vec)
 {
@@ -233,32 +240,21 @@ LinearCombination<Vector, Vector> operator*(LinearCombination<Vector, Scalar> co
 
 
 // explicit instantiation non class members operators
-// using a function to avoid repeating
-template<class U, class V>
-static void instantiateNonMembers()
-{
-    LinearCombination<U,V> var1, var2;  
-    typename LinearCombination<U,V>::BiasType bias;
-    Scalar scalar{};
-    var1 + var2;
-    var1 + bias;
-    bias + var1;
-    var1 - var2;
-    var1 - bias;
-    bias - var1;
-    -var1;
-    var1 * scalar;
-    scalar * var1;
-}
+// using a macro to avoid repeating
+#define INSTANTIATE(U,V)                                                                                            \
+template class LinearCombination<U, V>;                                                                             \
+template LinearCombination<U,V> operator+(LinearCombination<U,V>, LinearCombination<U,V> const&);                   \
+template LinearCombination<U,V> operator+(LinearCombination<U,V>, typename LinearCombination<U,V>::BiasType const&);\
+template LinearCombination<U,V> operator+(typename LinearCombination<U,V>::BiasType const&, LinearCombination<U,V>);\
+template LinearCombination<U,V> operator-(LinearCombination<U,V>, LinearCombination<U,V> const&);                   \
+template LinearCombination<U,V> operator-(LinearCombination<U,V>, typename LinearCombination<U,V>::BiasType const&);\
+template LinearCombination<U,V> operator-(typename LinearCombination<U,V>::BiasType const&, LinearCombination<U,V>);\
+template LinearCombination<U,V> operator-(LinearCombination<U,V>);                                                  \
+template LinearCombination<U,V> operator*(LinearCombination<U,V>, Scalar);                                          \
+template LinearCombination<U,V> operator*(Scalar, LinearCombination<U,V>);                                          \
+template LinearCombination<U,V> operator/(LinearCombination<U,V>, Scalar);
 
-template class LinearCombination<Scalar, Scalar>;
-template void instantiateNonMembers<Scalar, Scalar>();
-
-template class LinearCombination<Scalar, Vector>;
-template void instantiateNonMembers<Scalar, Vector>();
-
-template class LinearCombination<Vector, Scalar>;
-template void instantiateNonMembers<Vector, Scalar>();
-
-template class LinearCombination<Vector, Vector>;
-template void instantiateNonMembers<Vector, Vector>();
+INSTANTIATE(Scalar, Scalar)
+INSTANTIATE(Scalar, Vector)
+INSTANTIATE(Vector, Scalar)
+INSTANTIATE(Vector, Vector)

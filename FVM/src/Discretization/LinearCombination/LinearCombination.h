@@ -78,6 +78,9 @@ LinearCombination<U,V> operator*(LinearCombination<U,V>, Scalar);
 template<class U, class V>
 LinearCombination<U,V> operator*(Scalar, LinearCombination<U,V>);
 
+template<class U, class V>
+LinearCombination<U,V> operator/(LinearCombination<U,V>, Scalar);
+
 
 LinearCombination<Scalar, Vector> operator*(LinearCombination<Scalar, Scalar> const&, Vector);
 LinearCombination<Scalar, Vector> operator*(Vector, LinearCombination<Scalar, Scalar> const&);
