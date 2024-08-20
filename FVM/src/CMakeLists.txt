@@ -3,6 +3,8 @@ set(SOURCES
     Utils/MatrixSolver.cpp
     Utils/Timer.cpp
 
+    Config/Config.cpp
+
     Mesh/MeshBase.cpp
     Mesh/Geometry.cpp
     Mesh/2D/Structured/CartesianMesh2D.cpp
@@ -21,8 +23,7 @@ set(HEADERS
     Utils/MatrixSolver.h
     Utils/Timer.h
 
-    Config/PhysicalProperties.h
-    Config/SolverControl.h
+    Config/Config.h
 
     Boundary/BoundaryCondition.h
 
@@ -43,7 +44,7 @@ add_library(${LIBRARY_NAME} ${SOURCES} ${HEADERS})
 target_include_directories(${LIBRARY_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
 target_compile_options(${LIBRARY_NAME} PRIVATE
-    $<$<CONFIG:Debug>:-Wall -Wextra -Wpedantic -Werror -Wextra -Wpedantic>
+    $<$<CONFIG:Debug>:-Wall -Wextra -Wpedantic -Werror>
     $<$<CONFIG:Release>:-march=native>
 )
 

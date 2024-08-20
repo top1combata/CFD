@@ -1,7 +1,6 @@
 #include "SimpleAlgorithm.h"
 #include "Discretization/Interpolation/Interpolation.h"
-#include "Config/PhysicalProperties.h"
-#include "Config/SolverControl.h"
+#include "Config/Config.h"
 #include "Utils/MatrixSolver.h"
 #include <iostream>
 #include <format>
