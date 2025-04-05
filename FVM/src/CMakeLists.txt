@@ -43,9 +43,26 @@ add_library(${LIBRARY_NAME} ${SOURCES} ${HEADERS})
 
 target_include_directories(${LIBRARY_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
-target_compile_options(${LIBRARY_NAME} PRIVATE
-    $<$<CONFIG:Debug>:-Wall -Wextra -Wpedantic -Werror>
-    $<$<CONFIG:Release>:-march=native>
+# Sanitizers
+if (UNIX)
+    if (${TSAN})
+        set(SANITIZER_FLAGS -fsanitize=thread)
+    else()
+        set(SANITIZER_FLAGS -fsanitize=address)
+    endif()
+endif()
+
+if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+    message(STATUS "Sanitize flags: " ${SANITIZER_FLAGS})
+endif()
+
+target_compile_options(${LIBRARY_NAME} INTERFACE    
+    $<$<CONFIG:Debug>: -Wall -Wextra -Wpedantic -Werror ${SANITIZER_FLAGS}>
+    $<$<CONFIG:Release>: -march=native>
+)
+
+target_link_options(${LIBRARY_NAME} PUBLIC
+    $<$<CONFIG:Debug>: ${SANITIZER_FLAGS}>
 )
 
 # OpenMP
