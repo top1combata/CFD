@@ -56,7 +56,7 @@ if (CMAKE_BUILD_TYPE STREQUAL "Debug")
     message(STATUS "Sanitize flags: " ${SANITIZER_FLAGS})
 endif()
 
-target_compile_options(${LIBRARY_NAME} INTERFACE    
+target_compile_options(${LIBRARY_NAME} PUBLIC    
     $<$<CONFIG:Debug>: -Wall -Wextra -Wpedantic -Werror ${SANITIZER_FLAGS}>
     $<$<CONFIG:Release>: -march=native>
 )
