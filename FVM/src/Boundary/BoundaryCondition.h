@@ -18,6 +18,16 @@ public:
 
     T value;
     BoundaryConditionType type;
+
+    static BoundaryCondition fixedValue(T value)
+    {
+        return {value, BoundaryConditionType::FIXED_VALUE};
+    }
+
+    static BoundaryCondition fixedGradient(T value)
+    {
+        return {value, BoundaryConditionType::FIXED_GRADIENT};
+    }
 };
 
 class Boundaries
@@ -27,6 +37,9 @@ public:
     BoundaryCondition<Vector> uBoundary;
     BoundaryCondition<Scalar> pBoundary;
 
+    static Boundaries wall();
+    static Boundaries outlet(Scalar pressure);
+    static Boundaries inlet(Vector velocity);
 };
 
 
@@ -35,10 +48,11 @@ using BoundaryConditionGetter = std::function<BoundaryCondition<T>(Index)>;
 
 
 template<class T>
-BoundaryConditionGetter<T> zeroGrad()
+BoundaryConditionGetter<T> zeroGradGetter()
 {
     return [](Index) -> BoundaryCondition<T>
     {
-        return {zero<T>(), BoundaryConditionType::FIXED_GRADIENT};
+        static auto boundary = BoundaryCondition<T>::fixedGradient(zero<T>());
+        return boundary;
     };
 }

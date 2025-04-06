@@ -5,6 +5,8 @@ set(SOURCES
 
     Config/Config.cpp
 
+    Boundary/BoundaryCondition.cpp
+
     Mesh/MeshBase.cpp
     Mesh/Geometry.cpp
     Mesh/2D/Structured/CartesianMesh2D.cpp
