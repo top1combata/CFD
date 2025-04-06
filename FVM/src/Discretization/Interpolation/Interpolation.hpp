@@ -170,11 +170,11 @@ static Vector Interpolation::RhieChowVelocityOnFace
     if (mesh.isBoundaryFace(faceIdx))
         return faceVelocity;
 
-    Scalar VbyA_f = valueOnFace(mesh, faceIdx, zeroGrad<Scalar>()).evaluate(VbyA);
+    Scalar VbyA_f = valueOnFace(mesh, faceIdx, zeroGradGetter<Scalar>()).evaluate(VbyA);
 
     Index cellIdx = mesh.getFaceOwner(faceIdx);
     Scalar faceNormalGrad = faceNormalGradient(mesh, cellIdx, faceIdx, pBoundaries).evaluate(p);
-    Vector avgFaceGradient = valueOnFace(mesh, faceIdx, zeroGrad<Vector>()).evaluate(pGrad);
+    Vector avgFaceGradient = valueOnFace(mesh, faceIdx, zeroGradGetter<Vector>()).evaluate(pGrad);
     // correction
     Vector faceVector = mesh.getFaceVector(faceIdx);
     Vector unitNormal = faceVector / faceVector.norm();

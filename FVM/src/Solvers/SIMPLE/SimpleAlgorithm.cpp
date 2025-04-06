@@ -13,7 +13,9 @@
 #endif
 
 
-SimpleAlgorithm::SimpleAlgorithm(MeshBase const& mesh) : m_mesh(mesh){}
+SimpleAlgorithm::SimpleAlgorithm(MeshBase const& mesh) 
+    : m_mesh(mesh)
+{}
 
 
 void SimpleAlgorithm::solve()
@@ -211,9 +213,9 @@ void SimpleAlgorithm::generatePressureCorrectionSystem()
         for (Index faceIdx : m_mesh.getCellFaces(cellIdx))
         {
             Vector faceVector = m_mesh.getFaceVector(faceIdx);
-            Scalar VbyAf = Interpolation::valueOnFace(m_mesh, faceIdx, zeroGrad<Scalar>()).evaluate(m_VbyA);
+            Scalar VbyAf = Interpolation::valueOnFace(m_mesh, faceIdx, zeroGradGetter<Scalar>()).evaluate(m_VbyA);
             
-            diffusiveFlux += VbyAf *Config::density * faceVector.norm() * Interpolation::faceNormalGradient(m_mesh, cellIdx, faceIdx, pCorrBoundaries);
+            diffusiveFlux += VbyAf * Config::density * faceVector.norm() * Interpolation::faceNormalGradient(m_mesh, cellIdx, faceIdx, pCorrBoundaries);
 
             Scalar massFlux = m_mass_fluxes(faceIdx);
             if (cellIdx != m_mesh.getFaceOwner(faceIdx))
@@ -281,7 +283,7 @@ Field<Scalar> SimpleAlgorithm::getMassFluxesCorrection(Field<Scalar> const& pCor
     for (Index faceIdx = 0; faceIdx < totalFaces; faceIdx++)
     {
         Index ownerIdx = m_mesh.getFaceOwner(faceIdx);
-        Scalar VbyAf = Interpolation::valueOnFace(m_mesh, faceIdx, zeroGrad<Scalar>()).evaluate(m_VbyA);
+        Scalar VbyAf = Interpolation::valueOnFace(m_mesh, faceIdx, zeroGradGetter<Scalar>()).evaluate(m_VbyA);
         massFluxesCorrection(faceIdx) = -Config::density * VbyAf * Interpolation::faceNormalGradient(m_mesh, ownerIdx, faceIdx, pCorrBoundaries).evaluate(pCorrection);
     }
     m_timers["explicit field computation"].stop();
@@ -308,7 +310,7 @@ void generateSparseSystemImpl(SparseMatrix& A, Rhs& rhs, Index size, std::functi
     using Triplet = Eigen::Triplet<Scalar>;
     List<Triplet> triplets;
 
-    auto cmp = [](Term<auto> lhs, Term<auto> rhs)
+    auto cmp = []<typename U>(Term<U> lhs, Term<U> rhs)
     {
         return lhs.idx < rhs.idx;
     };
