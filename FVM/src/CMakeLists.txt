@@ -1,47 +1,11 @@
+add_library(${LIBRARY_NAME})
 
-set(SOURCES
-    Utils/MatrixSolver.cpp
-    Utils/Timer.cpp
-
-    Config/Config.cpp
-
-    Boundary/BoundaryCondition.cpp
-
-    Mesh/MeshBase.cpp
-    Mesh/Geometry.cpp
-    Mesh/2D/Structured/CartesianMesh2D.cpp
-    Mesh/2D/Unstructured/PolyMesh2D.cpp
-    Mesh/2D/Unstructured/Parse.cpp
-
-    Discretization/LinearCombination/LinearCombination.cpp
-    Discretization/Interpolation/Interpolation.hpp
-
-    Solvers/SIMPLE/SimpleAlgorithm.cpp
-)
-
-set(HEADERS
-    Utils/Types.h
-    Utils/TypesOperations.h
-    Utils/MatrixSolver.h
-    Utils/Timer.h
-
-    Config/Config.h
-
-    Boundary/BoundaryCondition.h
-
-    Mesh/MeshBase.h
-    Mesh/Geometry.h
-    Mesh/2D/Structured/CartesianMesh2D.h
-    Mesh/2D/Unstructured/PolyMesh2D.h
-    Mesh/2D/Unstructured/Parse.h
-
-    Discretization/LinearCombination/LinearCombination.h
-    Discretization/Interpolation/Interpolation.h
-
-    Solvers/SIMPLE/SimpleAlgorithm.h
-)
-
-add_library(${LIBRARY_NAME} ${SOURCES} ${HEADERS})
+add_subdirectory(Boundary)
+add_subdirectory(Config)
+add_subdirectory(Discretization)
+add_subdirectory(Mesh)
+add_subdirectory(Solvers)
+add_subdirectory(Utils)
 
 target_include_directories(${LIBRARY_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
