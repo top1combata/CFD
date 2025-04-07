@@ -38,6 +38,7 @@ public:
     BoundaryCondition<Scalar> pBoundary;
 
     static Boundaries wall();
+    static Boundaries movingWall(Vector velocity);
     static Boundaries outlet(Scalar pressure);
     static Boundaries inlet(Vector velocity);
 };

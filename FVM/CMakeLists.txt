@@ -9,7 +9,4 @@ set(LIBRARY_NAME ${PROJECT_NAME})
 
 add_subdirectory(src)
 add_subdirectory(test)
-
-add_executable(main main.cpp)
-
-target_link_libraries(main ${LIBRARY_NAME})
+add_subdirectory(examples)
