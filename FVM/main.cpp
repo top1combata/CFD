@@ -11,8 +11,8 @@ int main()
     Config::uRelax = 0.3;
     Config::pRelax = 0.1;
 
-    omp_set_num_threads(2);
-    CartesianMesh2D mesh(10, 10, 1, 1);
+    omp_set_num_threads(8);
+    CartesianMesh2D mesh(15, 15, 1, 1);
 
     mesh.setBottomBoundary(Boundaries::wall());
     mesh.setTopBoundary(Boundaries::wall());

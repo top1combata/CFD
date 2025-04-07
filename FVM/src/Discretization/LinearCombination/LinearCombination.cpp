@@ -114,6 +114,20 @@ Tensor LinearCombination<Vector, Vector>::evaluate(Field<Vector> const& field) c
 }
 
 
+template<class VarType, class CoeffType>
+LinearCombination<VarType, Scalar> LinearCombination<VarType, CoeffType>::dot(Vector vec) const
+requires std::same_as<CoeffType, Vector>
+{
+    LinearCombination<VarType, Scalar> res(innerProduct(bias, vec));
+    res.terms.reserve(terms.size());
+
+    for (auto [coeff, idx] : terms)
+        res.terms.emplace_back(coeff.dot(vec), idx);
+    
+    return res;
+}
+
+
 template<class U, class V>
 LinearCombination<U,V> operator+(LinearCombination<U,V> lhs, LinearCombination<U,V> const& rhs)
 {
@@ -232,31 +246,3 @@ INSTANTIATE(Scalar, Scalar)
 INSTANTIATE(Scalar, Vector)
 INSTANTIATE(Vector, Scalar)
 INSTANTIATE(Vector, Vector)
-
-
-template<>
-LinearCombination<Scalar, Scalar> LinearCombination<Scalar, Vector>::dot(Vector vec) const
-{
-    LinearCombination<Scalar, Scalar> res(bias.dot(vec));
-    res.terms.reserve(terms.size());
-
-    for (auto [coeff, idx] : terms)
-        res.terms.emplace_back(coeff.dot(vec), idx);
-    
-    return res;
-}
-
-
-template<>
-LinearCombination<Vector, Scalar> LinearCombination<Vector, Vector>::dot(Vector vec) const
-{
-    LinearCombination<Vector, Scalar> res(bias * vec);
-    res.terms.reserve(terms.size());
-
-    for (auto [coeff, idx] : terms)
-        res.terms.emplace_back(coeff.dot(vec), idx);
-    
-    return res;
-}
-
-

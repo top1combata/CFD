@@ -26,3 +26,24 @@ struct ProductType<Scalar, Scalar> {using type = Scalar;};
 
 template<>
 struct ProductType<Vector, Vector> {using type = Tensor;};
+
+
+inline Scalar innerProduct(Vector lhs, Vector rhs)
+{
+    return lhs.dot(rhs);
+}
+
+inline Vector innerProduct(Tensor const& lhs, Vector rhs)
+{
+    return lhs * rhs;
+}
+
+inline Vector innerProduct(Vector lhs, Tensor const& rhs)
+{
+    return (lhs.transpose() * rhs).transpose();
+}
+
+inline Tensor innerProduct(Tensor const& lhs, Tensor const& rhs)
+{
+    return lhs * rhs;
+}
