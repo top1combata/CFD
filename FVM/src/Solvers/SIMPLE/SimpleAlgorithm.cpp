@@ -1,5 +1,5 @@
 #include "SimpleAlgorithm.h"
-#include "Discretization/Interpolation/Interpolation.h"
+#include "Discretization/Interpolation.h"
 #include "Config/Config.h"
 #include "Utils/MatrixSolver.h"
 #include <iostream>
@@ -318,9 +318,11 @@ void generateSparseSystemImpl(SparseMatrix& A, Rhs& rhs, Index size, std::functi
 #ifdef _OPENMP
     List<Triplet> threadTriplets;
     Index numThreads;
-    #pragma omp parallel 
-    #pragma omp single 
-    numThreads = omp_get_num_threads();
+    #pragma omp parallel
+    #pragma omp single
+    {
+        numThreads = omp_get_num_threads();
+    }
 
     List<Index> sizes(numThreads);
     List<Index> prefix(numThreads+1, 0);
@@ -341,7 +343,7 @@ void generateSparseSystemImpl(SparseMatrix& A, Rhs& rhs, Index size, std::functi
 
             rhs.row(eqnIdx) = -transpose(eqn.bias);
         }
-        #pragma omp barrier
+
         sizes[threadIdx] = threadTriplets.size();
         #pragma omp barrier
         

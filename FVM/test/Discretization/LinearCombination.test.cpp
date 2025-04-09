@@ -1,8 +1,10 @@
 #include <gtest/gtest.h>
-#include <Discretization/LinearCombination/LinearCombination.h>
+#include <Discretization/LinearCombination.h>
 #include <algorithm>
 #include <random>
 
+
+constexpr int SEED = 42;
 
 template<class T> requires std::convertible_to<T,Scalar>
 static Scalar norm(T value)
@@ -40,6 +42,20 @@ template<class U, class V>
 void sortIndices(LinearCombination<U,V>& lc)
 {
     std::sort(lc.terms.begin(), lc.terms.end(), [](auto t1, auto t2){return t1.idx < t2.idx;});
+}
+
+Scalar randomScalar() {
+    static std::mt19937 gen(SEED);
+    int num = gen() % 100;
+    int denum = (1 << (gen() % 5));
+    return num / (Scalar)denum;
+}
+
+Vector randomVector() {
+    Vector res;
+    for (int idx = 0; idx < 3; idx++)
+        res(idx) = randomScalar();
+    return res;
 }
 
 TEST(TestLinearCombination, ValidConstructScalar)
@@ -152,9 +168,9 @@ TEST(TestLinearCombination, nonMemberOperators)
     auto randomCombination = []()
     {
         Index sz = 4;
-        std::mt19937 generator{(std::size_t)std::rand()};
-        std::uniform_int_distribution<int> distribution(-30, 30);
-        std::uniform_int_distribution<int> idxDistribution(0, 10);
+        static std::mt19937 generator{SEED};
+        static std::uniform_int_distribution<int> distribution(-30, 30);
+        static std::uniform_int_distribution<int> idxDistribution(0, 10);
 
         LinearCombination<Scalar, Scalar> res;
         res.bias = distribution(generator);
@@ -251,12 +267,49 @@ TEST(TestLinearCombination, MulScalarByVector)
 
 TEST(TestLinearCombination, MulVectorByVector)
 {
-    LinearCombination<Vector, Scalar> lc = {{0.5, 2}, {1.5, 1}, {3, 3}};
-    lc += {1,-2,3};
-    auto vlc = lc * Vector{-1,3,7};
-    EXPECT_EQ(vlc.bias, Tensor({{-1,3,7},{2,-6,-14},{-3,9,21}}));
-    sortIndices(vlc);
-    EXPECT_EQ(vlc.terms, std::vector<Term<Vector>>({ {{-1.5,4.5,10.5}, 1}, {{-0.5,1.5,3.5}, 2}, {{-3,9,21}, 3} }));
+    {
+        Scalar c1 = randomScalar(), c2 = randomScalar(), c3 = randomScalar();
+        Vector bias = randomVector();
+
+        LinearCombination<Vector, Scalar> lc = {{c3, 3}, {c2, 2}, {c1, 1}};
+        lc += bias;
+
+        Vector multiplier = randomVector();
+
+        auto result = lc * multiplier;
+        sortIndices(result);
+        std::vector<Term<Vector>> expectedTerms = { {c1 * multiplier, 1}, {c2 * multiplier, 2}, {c3 * multiplier, 3} };
+        EXPECT_EQ(result.bias, lc.bias * multiplier.transpose());
+        EXPECT_EQ(result.terms, expectedTerms);
+
+        result = multiplier * lc;
+        sortIndices(result);
+        EXPECT_EQ(result.bias, multiplier * lc.bias.transpose());
+        EXPECT_EQ(result.terms, expectedTerms);
+    }
+    {
+        Vector v1 = randomVector(), v2 = randomVector(), v3 = randomVector();
+        Vector bias = randomVector();
+
+        LinearCombination<Scalar, Vector> lc = {{v2, 2}, {v3, 3}, {v1, 1}};
+        lc += bias;
+
+        Vector multiplier = randomVector();
+        auto transposed = multiplier.transpose();
+
+        auto result = lc * multiplier;
+        sortIndices(result);
+        std::vector<Term<Tensor>> expectedTerms = {{v1 * transposed, 1}, {v2 * transposed, 2}, {v3 * transposed, 3}};
+        EXPECT_EQ(result.bias, bias * transposed);
+        EXPECT_EQ(result.terms, expectedTerms);
+
+        result = multiplier * lc;
+        sortIndices(result);
+        for (auto& [coeff, _] : expectedTerms)
+            coeff.transposeInPlace();
+        EXPECT_EQ(result.bias, multiplier * bias.transpose());
+        EXPECT_EQ(result.terms, expectedTerms);
+    }
 }
 
 

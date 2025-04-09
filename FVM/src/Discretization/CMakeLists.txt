@@ -1,5 +1,4 @@
 target_sources(${LIBRARY_NAME} PRIVATE
+    LinearCombination.cpp
 )
 
-add_subdirectory(Interpolation)
-add_subdirectory(LinearCombination)

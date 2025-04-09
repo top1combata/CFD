@@ -47,3 +47,16 @@ inline Tensor innerProduct(Tensor const& lhs, Tensor const& rhs)
 {
     return lhs * rhs;
 }
+
+
+template<class Lhs, class Rhs>
+typename ProductType<Lhs, Rhs>::type outerProduct(Lhs lhs, Rhs rhs)
+requires std::same_as<Lhs, Scalar> || std::same_as<Rhs, Scalar>
+{
+    return lhs * rhs;
+}
+
+inline Tensor outerProduct(Vector lhs, Vector rhs)
+{
+    return lhs * rhs.transpose();
+}

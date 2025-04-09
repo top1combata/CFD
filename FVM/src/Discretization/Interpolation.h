@@ -2,7 +2,7 @@
 
 #include "Utils/Types.h"
 #include "Mesh/MeshBase.h"
-#include "Discretization/LinearCombination/LinearCombination.h"
+#include "Discretization/LinearCombination.h"
 
 namespace Interpolation
 {

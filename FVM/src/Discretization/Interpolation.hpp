@@ -1,3 +1,5 @@
+#include "Interpolation.h"
+
 #include "Mesh/Geometry.h"
 
 
@@ -16,7 +18,6 @@ LinearCombination<T, Vector> Interpolation::cellGradient
         Vector faceVector = mesh.getFaceVector(faceIdx);
         if (cellIdx != mesh.getFaceOwner(faceIdx))
             faceVector *= -1;
-            
         gradient += faceVector * valueOnFace(mesh, faceIdx, boundaries);
     }
     gradient /= mesh.getCellVolume(cellIdx);
@@ -37,7 +38,9 @@ LinearCombination<T, Scalar> Interpolation::diffusionFluxOverCell
     for (Index faceIdx : mesh.getCellFaces(cellIdx))
     {
         Vector faceVector = mesh.getFaceVector(faceIdx);
-        flux += faceNormalGradient(mesh, cellIdx, faceIdx, boundaries) * faceVector.norm();
+        if (mesh.getFaceOwner(faceIdx) != cellIdx)
+            faceVector *= -1;
+        flux += faceNormalGradient(mesh, cellIdx, faceIdx, boundaries) * faceVector.norm(); 
     }
     return flux;
 }

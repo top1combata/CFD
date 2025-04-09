@@ -73,16 +73,17 @@ template<class U, class V>
 LinearCombination<U,V> operator-(LinearCombination<U,V>);
 
 template<class U, class V>
-LinearCombination<U,V> operator*(LinearCombination<U,V>, Scalar);
-
-template<class U, class V>
-LinearCombination<U,V> operator*(Scalar, LinearCombination<U,V>);
-
-template<class U, class V>
 LinearCombination<U,V> operator/(LinearCombination<U,V>, Scalar);
 
 
-LinearCombination<Scalar, Vector> operator*(LinearCombination<Scalar, Scalar> const&, Vector);
-LinearCombination<Scalar, Vector> operator*(Vector, LinearCombination<Scalar, Scalar> const&);
+// product with scalar or vector
+// in case of multiplying by vector coeffs of the result calculated as outer prodcut
+template<class VarType, class CoeffType, class T>
+LinearCombination<VarType, typename ProductType<CoeffType, T>::type>
+operator*(LinearCombination<VarType, CoeffType> const&, T)
+requires std::same_as<T, Scalar> || std::same_as<T, Vector>;
 
-LinearCombination<Vector, Vector> operator*(LinearCombination<Vector, Scalar> const&, Vector);
+template<class VarType, class CoeffType, class T>
+LinearCombination<VarType, typename ProductType<T, CoeffType>::type>
+operator*(T, LinearCombination<VarType, CoeffType> const&)
+requires std::same_as<T, Scalar> || std::same_as<T, Vector>;
