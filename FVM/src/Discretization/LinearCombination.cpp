@@ -224,7 +224,7 @@ requires std::same_as<T, Scalar> || std::same_as<T, Vector>
 
 // explicit instantiation non class members operators
 // using a macro to avoid repeating
-#define INSTANTIATE_COMMON(U, V)                                                                                        \   
+#define INSTANTIATE_COMMON(U, V)                                                                                        \
 template class LinearCombination<U, V>;                                                                                 \
 template LinearCombination<U, V> operator+(LinearCombination<U, V>, LinearCombination<U, V> const&);                    \
 template LinearCombination<U, V> operator+(LinearCombination<U, V>, typename LinearCombination<U, V>::BiasType const&); \

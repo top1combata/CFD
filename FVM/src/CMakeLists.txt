@@ -23,8 +23,12 @@ if (CMAKE_BUILD_TYPE STREQUAL "Debug")
 endif()
 
 target_compile_options(${LIBRARY_NAME} PUBLIC    
-    $<$<CONFIG:Debug>: -Wall -Wextra -Wpedantic -Werror ${SANITIZER_FLAGS}>
+    $<$<CONFIG:Debug>: -Wall ${SANITIZER_FLAGS}>
     $<$<CONFIG:Release>: -march=native>
+)
+
+target_compile_options(${LIBRARY_NAME} PRIVATE    
+    $<$<CONFIG:Debug>: -Wall -Wextra -Wpedantic -Werror>
 )
 
 target_link_options(${LIBRARY_NAME} PUBLIC
