@@ -18,7 +18,7 @@ LinearCombination<T, Vector> Interpolation::cellGradient
         Vector faceVector = mesh.getFaceVector(faceIdx);
         if (cellIdx != mesh.getFaceOwner(faceIdx))
             faceVector *= -1;
-        gradient += faceVector * valueOnFace(mesh, faceIdx, boundaries);
+        gradient += valueOnFace(mesh, faceIdx, boundaries) * faceVector;
     }
     gradient /= mesh.getCellVolume(cellIdx);
 
@@ -108,20 +108,35 @@ LinearCombination<T, Scalar> Interpolation::valueOnFace
     }
 
     // general case
-    auto [cellIdx1, cellIdx2] = mesh.getFaceNeighbors(faceIdx);
-    Scalar dist1 = Geometry::distanceCellToFace(mesh, cellIdx1, faceIdx);
-    Scalar dist2 = Geometry::distanceCellToFace(mesh, cellIdx2, faceIdx);
+    auto [cellFromIdx, cellToIdx] = mesh.getFaceNeighbors(faceIdx);
 
-    Scalar coeff1 = 1 - dist1 / (dist1 + dist2);
-    Scalar coeff2 = 1 - coeff1;
-    return {{coeff1, cellIdx1}, {coeff2, cellIdx2}};
+    Scalar coeffFrom, coeffTo;
+
+    if (mesh.useNonOrthogonalCorrection)
+    {
+        Scalar distanceBetweenCells = Geometry::distanceCellToCell(mesh, cellFromIdx, cellToIdx);
+        Vector unitDirection = Geometry::cellToCellUnitVector(mesh, cellFromIdx, cellToIdx);
+        Scalar distanceToFace = Geometry::distanceCellToFaceInDirection(mesh, cellFromIdx, faceIdx, unitDirection);
+    
+        coeffFrom = distanceToFace / distanceBetweenCells;
+        coeffTo = 1 - coeffFrom;
+    }
+    else 
+    {
+        Scalar distFrom = Geometry::distanceCellToFace(mesh, cellFromIdx, faceIdx);
+        Scalar distTo = Geometry::distanceCellToFace(mesh, cellToIdx, faceIdx);
+    
+        Scalar coeffFrom = 1 - distFrom/ (distFrom + distTo);
+        Scalar coeffTo = 1 - coeffFrom;
+    }
+    return {{coeffFrom, cellFromIdx}, {coeffTo, cellToIdx}};
 }
 
 
 template<class T>
 LinearCombination<T, Scalar> Interpolation::faceNormalGradient
 (
-    MeshBase const& mesh, 
+    MeshBase const& mesh,
     Index cellFromIdx, 
     Index faceIdx,
     BoundaryConditionGetter<T> const& boundaries
@@ -151,8 +166,40 @@ LinearCombination<T, Scalar> Interpolation::faceNormalGradient
     auto [tmpIdx1, tmpIdx2] = mesh.getFaceNeighbors(faceIdx);
     Index cellToIdx = (tmpIdx1 == cellFromIdx ? tmpIdx2 : tmpIdx1);
 
-    Scalar dist = Geometry::distanceCellToCell(mesh, cellFromIdx, cellToIdx);
-    return {{1/dist, cellToIdx}, {-1/dist, cellFromIdx}};
+    Scalar distanceBetweenCells = Geometry::distanceCellToCell(mesh, cellFromIdx, cellToIdx);
+    LinearCombination<T, Scalar> finiteDifference = 
+    {
+        {1 / distanceBetweenCells, cellToIdx},
+        {-1 / distanceBetweenCells, cellFromIdx},
+    };
+
+    if (!mesh.useNonOrthogonalCorrection)
+    {
+        return finiteDifference;
+    }
+
+    auto cellFromGradient = cellGradient(mesh, cellFromIdx, boundaries);
+    auto cellToGradient = cellGradient(mesh, cellToIdx, boundaries);
+
+    Vector unitDirection = Geometry::cellToCellUnitVector(mesh, cellFromIdx, cellToIdx);
+    Scalar cellFromDistanceToFace = Geometry::distanceCellToFaceInDirection(mesh, cellFromIdx, faceIdx, unitDirection);
+
+    Scalar cellFromFactor = cellFromDistanceToFace / distanceBetweenCells;
+    auto faceGradient = cellFromFactor * cellFromGradient + (1 - cellFromFactor) * cellToGradient;
+
+    Vector faceVector = mesh.getFaceVector(faceIdx).normalized();
+    if (mesh.getFaceOwner(faceIdx) != cellFromIdx)
+        faceVector *= -1;
+
+    // Using over-relaxed approach
+    Vector orthogonalComponent = faceVector.norm() / faceVector.dot(unitDirection) * unitDirection;
+    Vector nonOrthogonalComponent = faceVector - orthogonalComponent;
+    
+    return 
+    (
+        finiteDifference * orthogonalComponent.norm() +
+        faceGradient.dot(nonOrthogonalComponent)
+    );
 }
 
 
@@ -180,7 +227,7 @@ static Vector Interpolation::RhieChowVelocityOnFace
     Vector avgFaceGradient = valueOnFace(mesh, faceIdx, zeroGradGetter<Vector>()).evaluate(pGrad);
     // correction
     Vector faceVector = mesh.getFaceVector(faceIdx);
-    Vector unitNormal = faceVector / faceVector.norm();
+    Vector unitNormal = faceVector.normalized();
     Vector velocityCorrection = -VbyA_f * (faceNormalGrad - avgFaceGradient.dot(unitNormal))*unitNormal;
     
     return faceVelocity + velocityCorrection;

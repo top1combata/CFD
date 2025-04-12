@@ -32,6 +32,9 @@ public:
 
     List<Index>     getCellFaces(Index cellIdx) const;
 
+
+    bool useNonOrthogonalCorrection = false;
+
     virtual ~MeshBase() = default;
 
 protected:

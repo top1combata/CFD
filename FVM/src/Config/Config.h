@@ -6,6 +6,7 @@ class Config
 public:
 
     static Scalar density;
+    // dynamic viscosity of fluid
     static Scalar viscosity;
     
     static Scalar uRelax;
