@@ -3,65 +3,65 @@
 
 Index MeshBase::getCellAmount() const
 {
-    return static_cast<Index>(m_cell_volumes.size());
+    return static_cast<Index>(m_cellVolumes.size());
 }
 
 
 Vector MeshBase::getCellCentroid(Index cellIdx) const
 {
-    return m_cell_centroids[cellIdx];
+    return m_cellCentroids[cellIdx];
 }
 
 
 Scalar MeshBase::getCellVolume(Index cellIdx) const
 {
-    return m_cell_volumes[cellIdx];
+    return m_cellVolumes[cellIdx];
 }
 
 
 Index MeshBase::getFaceAmount() const
 {
-    return static_cast<Index>(m_face_centroids.size());
+    return static_cast<Index>(m_faceCentroids.size());
 }
 
 
 Vector MeshBase::getFaceCentroid(Index faceIdx) const
 {
-    return m_face_centroids[faceIdx];
+    return m_faceCentroids[faceIdx];
 }
 
 
 bool MeshBase::isBoundaryFace(Index faceIdx) const
 {
-    return -1 == m_face_neighbors[faceIdx][1];
+    return -1 == m_faceNeighbors[faceIdx][1];
 }
 
 
 Array<Index, 2> MeshBase::getFaceNeighbors(Index faceIdx) const
 {
-    return m_face_neighbors[faceIdx];
+    return m_faceNeighbors[faceIdx];
 }
 
 
 Vector MeshBase::getFaceVector(Index faceIdx) const
 {
-    return m_face_vectors[faceIdx];
+    return m_faceVectors[faceIdx];
 }
 
 
 Boundaries MeshBase::getFaceBoundary(Index faceIdx) const
 {
-    return m_boundaries_map.at(faceIdx);
+    return m_boundariesMap.at(faceIdx);
 }
 
 
 Index MeshBase::getFaceOwner(Index faceIdx) const
 {
-    return m_face_neighbors[faceIdx][0];
+    return m_faceNeighbors[faceIdx][0];
 }
 
 
 List<Index> MeshBase::getCellFaces(Index cellIdx) const
 {
-    return m_cell_faces[cellIdx];
+    return m_cellFaces[cellIdx];
 }

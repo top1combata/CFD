@@ -33,10 +33,15 @@ LinearCombination<VarType, CoeffType>& LinearCombination<VarType, CoeffType>::op
     {
         return t.idx == term.idx;
     });
+    
     if (iter == terms.end())
+    {
         terms.push_back(term);
+    }
     else
+    {
         iter->coeff += term.coeff;
+    }
     
     return *this;
 }
@@ -57,7 +62,9 @@ LinearCombination<VarType, CoeffType>& LinearCombination<VarType, CoeffType>::op
 {
     bias += rhs.bias;
     for (auto const& term : rhs.terms)
+    {
         *this += term;
+    }
 
     return *this;
 }
@@ -68,7 +75,9 @@ LinearCombination<VarType, CoeffType>& LinearCombination<VarType, CoeffType>::op
 {
     bias -= rhs.bias;
     for (auto const& term : rhs.terms)
+    {
         *this -= term;
+    }
 
     return *this;
 }
@@ -79,7 +88,9 @@ LinearCombination<VarType, CoeffType>& LinearCombination<VarType, CoeffType>::op
 {
     bias *= scalar;
     for (auto& term : terms)
+    {
         term.coeff *= scalar;
+    }
     
     return *this;
 }
@@ -97,7 +108,9 @@ LinearCombination<VarType, CoeffType>::BiasType LinearCombination<VarType, Coeff
 {
     BiasType res = bias;
     for (auto [coeff, idx] : terms)
+    {
         res += outerProduct(field(idx), coeff);
+    }
 
     return res;
 }
@@ -111,7 +124,9 @@ requires std::same_as<CoeffType, Vector>
     res.terms.reserve(terms.size());
 
     for (auto [coeff, idx] : terms)
+    {
         res.terms.emplace_back(coeff.dot(vec), idx);
+    }
     
     return res;
 }
@@ -199,7 +214,9 @@ requires std::same_as<T, Scalar> || std::same_as<T, Vector>
     res.bias = (outerProduct(lc.bias, value));
     res.terms.reserve(lc.terms.size());
     for (auto [coeff, idx] : lc.terms)
+    {
         res.terms.emplace_back(outerProduct(coeff, value), idx);
+    }
 
     return res;
 }
@@ -216,7 +233,9 @@ requires std::same_as<T, Scalar> || std::same_as<T, Vector>
     res.bias = (outerProduct(value, lc.bias));
     res.terms.reserve(lc.terms.size());
     for (auto [coeff, idx] : lc.terms)
+    {
         res.terms.emplace_back(outerProduct(value, coeff), idx);
+    }
 
     return res;
 }

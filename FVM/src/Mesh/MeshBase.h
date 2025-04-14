@@ -39,12 +39,12 @@ public:
 
 protected:
 
-    List<Vector>         m_cell_centroids;
-    List<Scalar>         m_cell_volumes;
-    List<List<Index>>    m_cell_faces;
-    List<Vector>         m_face_vectors;
-    List<Vector>         m_face_centroids;
-    List<Array<Index,2>> m_face_neighbors;
+    List<Vector>         m_cellCentroids;
+    List<Scalar>         m_cellVolumes;
+    List<List<Index>>    m_cellFaces;
+    List<Vector>         m_faceVectors;
+    List<Vector>         m_faceCentroids;
+    List<Array<Index,2>> m_faceNeighbors;
 
-    HashMap<Index, Boundaries> m_boundaries_map;
+    HashMap<Index, Boundaries> m_boundariesMap;
 };

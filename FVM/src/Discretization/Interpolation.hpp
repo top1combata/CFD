@@ -17,7 +17,9 @@ LinearCombination<T, Vector> Interpolation::cellGradient
     {
         Vector faceVector = mesh.getFaceVector(faceIdx);
         if (cellIdx != mesh.getFaceOwner(faceIdx))
+        {
             faceVector *= -1;
+        }
         gradient += valueOnFace(mesh, faceIdx, boundaries) * faceVector;
     }
     gradient /= mesh.getCellVolume(cellIdx);
@@ -39,7 +41,9 @@ LinearCombination<T, Scalar> Interpolation::diffusionFluxOverCell
     {
         Vector faceVector = mesh.getFaceVector(faceIdx);
         if (mesh.getFaceOwner(faceIdx) != cellIdx)
+        {
             faceVector *= -1;
+        }
         flux += faceNormalGradient(mesh, cellIdx, faceIdx, boundaries) * faceVector.norm(); 
     }
     return flux;
@@ -66,10 +70,14 @@ LinearCombination<T, Scalar> Interpolation::convectionFluxOverCell
         LinearCombination<T> implicitVelocity = {{1,1}};
         implicitVelocity.terms[0].idx = (massFlux > 0 ? ownerIdx : neighbourIdx);
         if (mesh.isBoundaryFace(faceIdx))
+        {
             implicitVelocity = valueOnFace(mesh, faceIdx, boundaries);
+        }
         
         if (cellIdx != ownerIdx)
+        {
             massFlux *= -1;
+        }
         flux += massFlux * implicitVelocity;
     }
 
@@ -126,8 +134,8 @@ LinearCombination<T, Scalar> Interpolation::valueOnFace
         Scalar distFrom = Geometry::distanceCellToFace(mesh, cellFromIdx, faceIdx);
         Scalar distTo = Geometry::distanceCellToFace(mesh, cellToIdx, faceIdx);
     
-        Scalar coeffFrom = 1 - distFrom/ (distFrom + distTo);
-        Scalar coeffTo = 1 - coeffFrom;
+        coeffFrom = 1 - distFrom/ (distFrom + distTo);
+        coeffTo = 1 - coeffFrom;
     }
     return {{coeffFrom, cellFromIdx}, {coeffTo, cellToIdx}};
 }
@@ -189,7 +197,9 @@ LinearCombination<T, Scalar> Interpolation::faceNormalGradient
 
     Vector faceVector = mesh.getFaceVector(faceIdx).normalized();
     if (mesh.getFaceOwner(faceIdx) != cellFromIdx)
+    {
         faceVector *= -1;
+    }
 
     // Using over-relaxed approach
     Vector orthogonalComponent = faceVector.norm() / faceVector.dot(unitDirection) * unitDirection;
@@ -203,7 +213,7 @@ LinearCombination<T, Scalar> Interpolation::faceNormalGradient
 }
 
 
-static Vector Interpolation::RhieChowVelocityOnFace
+inline Vector Interpolation::RhieChowVelocityOnFace
 (
     MeshBase const& mesh,
     Index faceIdx,
@@ -218,7 +228,9 @@ static Vector Interpolation::RhieChowVelocityOnFace
     Vector faceVelocity = valueOnFace(mesh, faceIdx, uBoundaries).evaluate(U);
     
     if (mesh.isBoundaryFace(faceIdx))
+    {
         return faceVelocity;
+    }
 
     Scalar VbyA_f = valueOnFace(mesh, faceIdx, zeroGradGetter<Scalar>()).evaluate(VbyA);
 
@@ -232,3 +244,4 @@ static Vector Interpolation::RhieChowVelocityOnFace
     
     return faceVelocity + velocityCorrection;
 }
+

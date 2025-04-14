@@ -15,4 +15,4 @@ Scalar distanceCellToCell(MeshBase const& mesh, Index cellFromIdx, Index cellToI
 
 Vector cellToCellUnitVector(MeshBase const& mesh, Index cellFromIdx, Index cellToIdx);
 
-}
+} // namespace Geometry

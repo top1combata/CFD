@@ -32,20 +32,26 @@ void SimpleAlgorithm::solve()
         correctPressure();
 
         std::cout << "Iteration #" << iterNum << 
-            "\n\tp residual : " << m_p_residual << 
+            "\n\tp residual : " << m_pResidual << 
             "\n\n";
     }
     m_timers["total"].stop();
 
-    // how much time elapsed
+    // How much time elapsed
     for (auto&& [eventName, eventTimer] : m_timers)
+    {
         std::cout << std::format("{} seconds for {}\n\n", eventTimer.getElapsedTime(), eventName);
+    }
 }
 
 
 bool SimpleAlgorithm::converged()
 {
-    return  m_p_residual < Config::pTolerance || std::isnan(m_p_residual);
+    return  
+    (
+        m_pResidual < Config::pTolerance ||
+        std::isnan(m_pResidual)
+    );
 }
 
 
@@ -55,16 +61,18 @@ void SimpleAlgorithm::solveMomentum()
     generateMomentumSystem();
     m_timers["generating linear systems"].stop();
 
-    relaxSystem(m_U_matrix, m_U_source, m_U, Config::uRelax);
+    relaxSystem(m_UMatrix, m_USource, m_U, Config::uRelax);
 
-    // the field V/A should be treated after under relaxation
+    // Field V/A should be treated after under relaxation
     computeVbyA();
 
-    // solving for new velocity field
+    // Solving for new velocity field
     m_timers["solving linear systems"].start();
-    auto sol = solveSystem(m_U_matrix, m_U_source);
+    auto sol = solveSystem(m_UMatrix, m_USource);
     for (Index cellIdx = 0; cellIdx < m_mesh.getCellAmount(); cellIdx++)
+    {
         m_U(cellIdx) = sol.row(cellIdx).transpose();
+    }
     m_timers["solving linear systems"].stop();
 }
 
@@ -76,20 +84,20 @@ void SimpleAlgorithm::correctPressure()
     m_timers["generating linear systems"].stop();
 
     m_timers["solving linear systems"].start();
-    Field<Scalar> pCorrection = solveSystem(m_p_matrix, m_p_source);
+    Field<Scalar> pCorrection = solveSystem(m_pMatrix, m_pSource);
     m_timers["solving linear systems"].stop();
 
-    // idk how, but explicit under relaxtion gives faster convergence than implicit
+    // Idk how, but explicit under relaxtion gives faster convergence than implicit
     pCorrection *= Config::pRelax;
 
     Field<Vector> uCorrection = getVelocityCorrection(pCorrection);
     Field<Scalar> massFluxesCorrection = getMassFluxesCorrection(pCorrection);
 
-    m_p_residual = relativeResidual(m_p, pCorrection);
+    m_pResidual = relativeResidual(m_p, pCorrection);
 
-    m_U           += uCorrection;
-    m_p           += pCorrection;
-    m_mass_fluxes += massFluxesCorrection;
+    m_U          += uCorrection;
+    m_p          += pCorrection;
+    m_massFluxes += massFluxesCorrection;
 }
 
 
@@ -110,31 +118,43 @@ void SimpleAlgorithm::initFields()
     Index totalCells = m_mesh.getCellAmount();
     Index totalFaces = m_mesh.getFaceAmount();
 
-    // initial guesses
+    // Initial guesses
     m_p           = Field<Scalar>::Constant(totalCells, 0);
     m_U           = Field<Vector>::Constant(totalCells, {0,0,0});
 
-    m_mass_fluxes = Field<Scalar>(totalFaces);
-    m_p_grad      = Field<Vector>(totalCells);
-    m_U_matrix    = SparseMatrix(totalCells, totalCells);
-    m_U_source    = Matrix(totalCells, 3);
-    m_p_matrix    = SparseMatrix(totalCells, totalCells);
-    m_p_source    = Matrix(totalCells, 1);
+    m_massFluxes = Field<Scalar>(totalFaces);
+    m_pGrad      = Field<Vector>(totalCells);
+    m_UMatrix    = SparseMatrix(totalCells, totalCells);
+    m_USource    = Matrix(totalCells, 3);
+    m_pMatrix    = SparseMatrix(totalCells, totalCells);
+    m_pSource    = Matrix(totalCells, 1);
     m_VbyA        = Field<Scalar>(totalCells);
     
     m_timers.clear();
 
-    // init mass fluxes
-    // can't be just zero because of boundary values
+    // Init mass fluxes
+    // Can't be just zero because of boundary values
     auto uBoundaries = getVelocityBoundaries();
     for (Index cellIdx = 0; cellIdx < totalCells; cellIdx++)
     {
         for (Index faceIdx : m_mesh.getCellFaces(cellIdx))
         {
-            if (m_mesh.isBoundaryFace(faceIdx) && m_mesh.getFaceBoundary(faceIdx).uBoundary.type == BoundaryConditionType::FIXED_VALUE)
-                m_mass_fluxes(faceIdx) = m_mesh.getFaceBoundary(faceIdx).uBoundary.value.dot(m_mesh.getFaceVector(faceIdx)) * Config::density;
+            if
+            (
+                m_mesh.isBoundaryFace(faceIdx) 
+                && m_mesh.getFaceBoundary(faceIdx).uBoundary.type == BoundaryConditionType::FIXED_VALUE
+            )
+            {
+                m_massFluxes(faceIdx) = 
+                (
+                    Config::density *
+                    m_mesh.getFaceBoundary(faceIdx).uBoundary.value.dot(m_mesh.getFaceVector(faceIdx))
+                );
+            }
             else
-                m_mass_fluxes(faceIdx) = 0;
+            {
+                m_massFluxes(faceIdx) = 0;
+            }
         }
     }
 }
@@ -151,7 +171,14 @@ void SimpleAlgorithm::computePressureGradient()
 #endif
     for (Index cellIdx = 0; cellIdx < totalCells; cellIdx++)
     {
-        m_p_grad(cellIdx) = Interpolation::cellGradient(m_mesh, cellIdx, pBoundaries).evaluate(m_p);
+        m_pGrad(cellIdx) = 
+        (
+            Interpolation::cellGradient
+            (
+                m_mesh, cellIdx, pBoundaries
+            )
+            .evaluate(m_p)
+        );
     }
     m_timers["explicit field computation"].stop();
 }
@@ -170,8 +197,16 @@ void SimpleAlgorithm::computeMassFluxes()
     for (Index faceIdx = 0; faceIdx < totalFaces; faceIdx++)
     {
         Vector faceVector = m_mesh.getFaceVector(faceIdx);
-        Vector faceVelocity = Interpolation::RhieChowVelocityOnFace(m_mesh, faceIdx, m_U, m_p, m_p_grad, m_VbyA, uBoundaries, pBoundaries);
-        m_mass_fluxes(faceIdx) = faceVelocity.dot(faceVector) * Config::density;
+        
+        Vector faceVelocity = 
+        (
+            Interpolation::RhieChowVelocityOnFace
+            (
+                m_mesh, faceIdx, m_U, m_p, m_pGrad, m_VbyA, uBoundaries, pBoundaries
+            )
+        );
+
+        m_massFluxes(faceIdx) = faceVelocity.dot(faceVector) * Config::density;
     }
 
     m_timers["explicit field computation"].stop();
@@ -187,9 +222,24 @@ void SimpleAlgorithm::generateMomentumSystem()
     std::function<LinearCombination<Vector>(Index)> uEqnGetter = 
     [this, uBoundaries = getVelocityBoundaries()](Index cellIdx)
     {
-        LinearCombination<Vector> convection = Interpolation::convectionFluxOverCell(m_mesh, cellIdx, uBoundaries, m_mass_fluxes);
-        LinearCombination<Vector> diffusion  = Interpolation::diffusionFluxOverCell(m_mesh, cellIdx, uBoundaries) * Config::viscosity;
-        Vector pressureGradient = m_p_grad(cellIdx) * m_mesh.getCellVolume(cellIdx);
+        LinearCombination<Vector> convection = 
+        (
+            Interpolation::convectionFluxOverCell
+            (
+                m_mesh, cellIdx, uBoundaries, m_massFluxes
+            )
+        );
+        
+        LinearCombination<Vector> diffusion = 
+        (
+            Config::viscosity *
+            Interpolation::diffusionFluxOverCell
+            (
+                m_mesh, cellIdx, uBoundaries
+            )
+        );
+
+        Vector pressureGradient = m_pGrad(cellIdx) * m_mesh.getCellVolume(cellIdx);
 
         LinearCombination<Vector> uEqn;
         uEqn += convection;
@@ -199,7 +249,7 @@ void SimpleAlgorithm::generateMomentumSystem()
         return uEqn;
     };
 
-    generateSparseSystemImpl(m_U_matrix, m_U_source, m_mesh.getCellAmount(), uEqnGetter);
+    generateSparseSystemImpl(m_UMatrix, m_USource, m_mesh.getCellAmount(), uEqnGetter);
 }
 
 
@@ -213,13 +263,30 @@ void SimpleAlgorithm::generatePressureCorrectionSystem()
         for (Index faceIdx : m_mesh.getCellFaces(cellIdx))
         {
             Vector faceVector = m_mesh.getFaceVector(faceIdx);
-            Scalar VbyAf = Interpolation::valueOnFace(m_mesh, faceIdx, zeroGradGetter<Scalar>()).evaluate(m_VbyA);
-            
-            diffusiveFlux += VbyAf * Config::density * faceVector.norm() * Interpolation::faceNormalGradient(m_mesh, cellIdx, faceIdx, pCorrBoundaries);
 
-            Scalar massFlux = m_mass_fluxes(faceIdx);
+            Scalar VbyAf = 
+            (
+                Interpolation::valueOnFace
+                (
+                    m_mesh, faceIdx, zeroGradGetter<Scalar>()
+                )
+                .evaluate(m_VbyA)
+            );
+            
+            diffusiveFlux +=
+            (
+                VbyAf * Config::density * faceVector.norm() *
+                Interpolation::faceNormalGradient
+                (
+                    m_mesh, cellIdx, faceIdx, pCorrBoundaries
+                )
+            );
+
+            Scalar massFlux = m_massFluxes(faceIdx);
             if (cellIdx != m_mesh.getFaceOwner(faceIdx))
+            {
                 massFlux *= -1;
+            }
 
             massFlow += massFlux;
         }
@@ -231,7 +298,7 @@ void SimpleAlgorithm::generatePressureCorrectionSystem()
         return pCorrEqn;
     };
     
-    generateSparseSystemImpl(m_p_matrix, m_p_source, m_mesh.getCellAmount(), pCorrEqnGetter);
+    generateSparseSystemImpl(m_pMatrix, m_pSource, m_mesh.getCellAmount(), pCorrEqnGetter);
 }
 
 
@@ -239,7 +306,7 @@ void SimpleAlgorithm::computeVbyA()
 {
     m_timers["explicit field computation"].start();
     Index totalCells = m_mesh.getCellAmount();
-    auto diagonal = m_U_matrix.diagonal();
+    auto diagonal = m_UMatrix.diagonal();
 
 #ifdef _OPENMP
     #pragma omp parallel for
@@ -263,7 +330,16 @@ Field<Vector> SimpleAlgorithm::getVelocityCorrection(Field<Scalar> const& pCorre
     #pragma omp parallel for
 #endif
     for (Index cellIdx = 0; cellIdx < totalCells; cellIdx++)
-        uCorrection(cellIdx) = -m_VbyA(cellIdx) * Interpolation::cellGradient(m_mesh, cellIdx, pCorrBoundaries).evaluate(pCorrection);
+    {
+        uCorrection(cellIdx) =
+        (
+            -m_VbyA(cellIdx) *
+            Interpolation::cellGradient
+            (
+                m_mesh, cellIdx, pCorrBoundaries).evaluate(pCorrection
+            )
+        );
+    }
     
     m_timers["explicit field computation"].stop();
     return uCorrection;
@@ -283,8 +359,25 @@ Field<Scalar> SimpleAlgorithm::getMassFluxesCorrection(Field<Scalar> const& pCor
     for (Index faceIdx = 0; faceIdx < totalFaces; faceIdx++)
     {
         Index ownerIdx = m_mesh.getFaceOwner(faceIdx);
-        Scalar VbyAf = Interpolation::valueOnFace(m_mesh, faceIdx, zeroGradGetter<Scalar>()).evaluate(m_VbyA);
-        massFluxesCorrection(faceIdx) = -Config::density * VbyAf * Interpolation::faceNormalGradient(m_mesh, ownerIdx, faceIdx, pCorrBoundaries).evaluate(pCorrection);
+
+        Scalar VbyAf =
+        (
+            Interpolation::valueOnFace
+            (
+                m_mesh, faceIdx, zeroGradGetter<Scalar>()
+            )
+            .evaluate(m_VbyA)
+        );
+
+        massFluxesCorrection(faceIdx) =
+        (
+            -Config::density * VbyAf *
+            Interpolation::faceNormalGradient
+            (
+                m_mesh, ownerIdx, faceIdx, pCorrBoundaries
+            )
+            .evaluate(pCorrection)
+        );
     }
     m_timers["explicit field computation"].stop();
     return massFluxesCorrection; 
@@ -339,7 +432,9 @@ void generateSparseSystemImpl(SparseMatrix& A, Rhs& rhs, Index size, std::functi
 
             std::sort(eqn.terms.begin(), eqn.terms.end(), cmp);
             for (auto [coeff, varIdx] : eqn.terms)
+            {
                 threadTriplets.emplace_back(eqnIdx, varIdx, coeff);
+            }
 
             rhs.row(eqnIdx) = -transpose(eqn.bias);
         }
@@ -350,13 +445,17 @@ void generateSparseSystemImpl(SparseMatrix& A, Rhs& rhs, Index size, std::functi
         #pragma omp single
         {
             for (Index idx = 1; idx <= numThreads; idx++)
+            {
                 prefix[idx] = prefix[idx-1] + sizes[idx-1];
+            }
             
             triplets.resize(prefix.back());
         }
 
         for (Index idx = 0; idx < sizes[threadIdx]; idx++)
+        {
             triplets[idx + prefix[threadIdx]] = threadTriplets[idx];
+        }
     }
 #else
     for (Index eqnIdx = 0; eqnIdx < size; eqnIdx++)
@@ -365,7 +464,9 @@ void generateSparseSystemImpl(SparseMatrix& A, Rhs& rhs, Index size, std::functi
 
         std::sort(eqn.terms.begin(), eqn.terms.end(), cmp);
         for (auto [coeff, varIdx] : eqn.terms)
+        {
             triplets.emplace_back(eqnIdx, varIdx, coeff);
+        }
 
         rhs.row(eqnIdx) = -transpose(eqn.bias);
     }

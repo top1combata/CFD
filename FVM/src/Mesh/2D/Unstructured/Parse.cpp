@@ -29,11 +29,14 @@ static void parseCell(List<std::string> const& tokens, List<List<Index>>& cells)
 static bool parseBoundaries(List<std::string> const& tokens, HashMap<Index, Boundaries>& boundariesMap);
 
 
-void parse(std::istream& stream,
-               List<Vector>& vertices,
-               List<Array<Index,2>>& faces,
-               List<List<Index>>& cells,
-               HashMap<Index, Boundaries>& boundariesMap)
+void parse
+(
+    std::istream& stream,
+    List<Vector>& vertices,
+    List<Array<Index,2>>& faces,
+    List<List<Index>>& cells,
+    HashMap<Index, Boundaries>& boundariesMap
+)
 {
     Index lineIdx = 0;
 
@@ -45,10 +48,14 @@ void parse(std::istream& stream,
         List<std::string> tokens = split(line, ' ');
 
         if (tokens.size() == 0 || std::string("#") == tokens[0])
+        {
             continue;
+        }
         
         if (tokens[0].size() > 1)
+        {
             throwParseError(lineIdx);
+        }
 
         char entity = tokens[0].at(0);
         switch (entity)
@@ -71,7 +78,9 @@ void parse(std::istream& stream,
         case 'b':
         {
             if (!parseBoundaries(tokens, boundariesMap))
+            {
                 throwParseError(lineIdx);
+            }
             break;
         }
         default:
@@ -101,7 +110,9 @@ static void parseCell(List<std::string> const& tokens, List<List<Index>>& cells)
 {
     cells.push_back({});
     for (Index idx = 1; idx < (Index)tokens.size(); idx++)
+    {
         cells.back().push_back(std::stoi(tokens[idx]));
+    }
 }
 
 
@@ -114,11 +125,17 @@ static bool parseBoundaries(List<std::string> const& tokens, HashMap<Index, Boun
     BoundaryConditionType boundariesType;
 
     if (tokens.at(3) == std::string("fixedValue"))
+    {
         boundariesType = FIXED_VALUE;
+    }
     else if (tokens.at(3) == std::string("fixedGradient"))
+    {
         boundariesType = FIXED_GRADIENT;
+    }
     else
+    {
         return false;
+    }
 
     if (tokens.at(2) == std::string("U"))
     {
@@ -131,7 +148,9 @@ static bool parseBoundaries(List<std::string> const& tokens, HashMap<Index, Boun
         boundaries.pBoundary.value = std::stod(tokens.at(4));
     }
     else
+    {
         return false;
+    }
     
     return true;
 }

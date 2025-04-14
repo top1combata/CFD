@@ -7,30 +7,34 @@ PolyMesh2D::PolyMesh2D(std::istream& stream)
     List<Vector> vertices;
     List<Array<Index,2>> faces;
     
-    parse(stream, vertices, faces, m_cell_faces, m_boundaries_map);
+    parse(stream, vertices, faces, m_cellFaces, m_boundariesMap);
 
-    Index totalCells = m_cell_faces.size();
+    Index totalCells = m_cellFaces.size();
     Index totalFaces = faces.size();
 
-    m_cell_centroids.resize(totalCells);
-    m_cell_volumes.resize(totalCells);
-    m_face_vectors.resize(totalFaces);
-    m_face_centroids.resize(totalFaces);
-    m_face_neighbors.resize(totalFaces, {-1,-1});
+    m_cellCentroids.resize(totalCells);
+    m_cellVolumes.resize(totalCells);
+    m_faceVectors.resize(totalFaces);
+    m_faceCentroids.resize(totalFaces);
+    m_faceNeighbors.resize(totalFaces, {-1,-1});
 
     for (Index cellIdx = 0; cellIdx < totalCells; cellIdx++)
     {
         Vector sum = {0,0,0};
-        for (Index faceIdx : m_cell_faces[cellIdx])
+        for (Index faceIdx : m_cellFaces[cellIdx])
         {
             // assigning the neighbour cell
-            if (-1 == m_face_neighbors[faceIdx][0])
-                m_face_neighbors[faceIdx][0] = cellIdx;
+            if (-1 == m_faceNeighbors[faceIdx][0])
+            {
+                m_faceNeighbors[faceIdx][0] = cellIdx;
+            }
             else
             {
-                m_face_neighbors[faceIdx][1] = cellIdx;
-                if (cellIdx < m_face_neighbors[faceIdx][0])
-                    std::swap(m_face_neighbors[faceIdx][0], m_face_neighbors[faceIdx][1]);  
+                m_faceNeighbors[faceIdx][1] = cellIdx;
+                if (cellIdx < m_faceNeighbors[faceIdx][0])
+                {
+                    std::swap(m_faceNeighbors[faceIdx][0], m_faceNeighbors[faceIdx][1]);
+                }
             }
 
             Index idx1 = faces[faceIdx][0];
@@ -38,11 +42,11 @@ PolyMesh2D::PolyMesh2D(std::istream& stream)
             Vector v1 = vertices.at(idx1);
             Vector v2 = vertices.at(idx2);
 
-            m_face_centroids[faceIdx] = (v1+v2)/2;
-            m_face_vectors[faceIdx] = {(v2-v1)[1], -(v2-v1)[0], 0};
+            m_faceCentroids[faceIdx] = (v1+v2)/2;
+            m_faceVectors[faceIdx] = {(v2-v1)[1], -(v2-v1)[0], 0};
             sum += v1+v2;
         }
-        m_cell_centroids.at(cellIdx) = sum / (2*m_cell_faces[cellIdx].size());
+        m_cellCentroids.at(cellIdx) = sum / (2*m_cellFaces[cellIdx].size());
 
         auto triangleArea = [](Vector v1, Vector v2, Vector v3) -> Scalar
         {
@@ -51,14 +55,14 @@ PolyMesh2D::PolyMesh2D(std::istream& stream)
             return abs(r1(0)*r2(1) - r1(1)*(r2(0)))/2;
         };
 
-        m_cell_volumes[cellIdx] = 0;
-        for (Index faceIdx : m_cell_faces[cellIdx])
+        m_cellVolumes[cellIdx] = 0;
+        for (Index faceIdx : m_cellFaces[cellIdx])
         {
             Vector v1 = vertices.at(faces[faceIdx][0]);
             Vector v2 = vertices.at(faces[faceIdx][1]);
-            Vector v3 = m_cell_centroids[cellIdx];
+            Vector v3 = m_cellCentroids[cellIdx];
 
-            m_cell_volumes[cellIdx] += triangleArea(v1,v2,v3);
+            m_cellVolumes[cellIdx] += triangleArea(v1,v2,v3);
         }
     }
     // correcting face vectors to neighbors
@@ -66,9 +70,11 @@ PolyMesh2D::PolyMesh2D(std::istream& stream)
     {
         Vector vertex = vertices.at(faces[faceIdx][0]);
         Index owner = getFaceOwner(faceIdx);
-        Vector r = m_cell_centroids.at(owner) - vertex;
+        Vector r = m_cellCentroids.at(owner) - vertex;
         
         if (getFaceVector(faceIdx).dot(r) > 0)
-            m_face_vectors[faceIdx] *= -1;
+        {
+            m_faceVectors[faceIdx] *= -1;
+        }
     }
 }

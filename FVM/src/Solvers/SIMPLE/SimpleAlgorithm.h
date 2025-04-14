@@ -21,19 +21,19 @@ private:
     // fields
     Field<Vector> m_U;
     Field<Scalar> m_p;
-    Field<Vector> m_p_grad;
+    Field<Vector> m_pGrad;
     Field<Scalar> m_VbyA;
-    Field<Scalar> m_mass_fluxes;
+    Field<Scalar> m_massFluxes;
     // momentum matrix and
-    SparseMatrix m_U_matrix;
-    Matrix m_U_source;
+    SparseMatrix m_UMatrix;
+    Matrix m_USource;
     // pressure correction matrix
-    SparseMatrix m_p_matrix;
-    Matrix m_p_source;
+    SparseMatrix m_pMatrix;
+    Matrix m_pSource;
 
     HashMap<std::string, Timer> m_timers;
 
-    Scalar m_p_residual = 1;
+    Scalar m_pResidual = 1;
 
     // associated mesh
     MeshBase const& m_mesh;

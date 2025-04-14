@@ -16,7 +16,7 @@ LinearCombination<T, Vector> cellGradient
 );
 
 
-static Vector RhieChowVelocityOnFace
+inline Vector RhieChowVelocityOnFace
 (
     MeshBase const& mesh,
     Index faceIdx,
