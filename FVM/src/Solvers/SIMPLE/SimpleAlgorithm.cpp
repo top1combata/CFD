@@ -14,7 +14,9 @@
 
 
 SimpleAlgorithm::SimpleAlgorithm(MeshBase const& mesh) 
-    : m_mesh(mesh)
+    : gradientScheme(Config::gradientScheme)
+    , convectionScheme(Config::convectionScheme)
+    , m_mesh(mesh)
 {}
 
 
@@ -175,7 +177,7 @@ void SimpleAlgorithm::computePressureGradient()
         (
             Interpolation::cellGradient
             (
-                m_mesh, cellIdx, pBoundaries
+                m_mesh, cellIdx, pBoundaries, gradientScheme
             )
             .evaluate(m_p)
         );
@@ -226,7 +228,7 @@ void SimpleAlgorithm::generateMomentumSystem()
         (
             Interpolation::convectionFluxOverCell
             (
-                m_mesh, cellIdx, uBoundaries, m_massFluxes
+                m_mesh, cellIdx, uBoundaries, m_massFluxes, convectionScheme
             )
         );
         
@@ -276,7 +278,7 @@ void SimpleAlgorithm::generatePressureCorrectionSystem()
             diffusiveFlux +=
             (
                 VbyAf * Config::density * faceVector.norm() *
-                Interpolation::faceNormalGradient
+                Interpolation::Schemes::Gradient::faceNormalGradient
                 (
                     m_mesh, cellIdx, faceIdx, pCorrBoundaries
                 )
@@ -336,8 +338,9 @@ Field<Vector> SimpleAlgorithm::getVelocityCorrection(Field<Scalar> const& pCorre
             -m_VbyA(cellIdx) *
             Interpolation::cellGradient
             (
-                m_mesh, cellIdx, pCorrBoundaries).evaluate(pCorrection
+                m_mesh, cellIdx, pCorrBoundaries, gradientScheme
             )
+            .evaluate(pCorrection)
         );
     }
     
@@ -372,7 +375,7 @@ Field<Scalar> SimpleAlgorithm::getMassFluxesCorrection(Field<Scalar> const& pCor
         massFluxesCorrection(faceIdx) =
         (
             -Config::density * VbyAf *
-            Interpolation::faceNormalGradient
+            Interpolation::Schemes::Gradient::faceNormalGradient
             (
                 m_mesh, ownerIdx, faceIdx, pCorrBoundaries
             )

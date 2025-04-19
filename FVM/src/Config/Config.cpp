@@ -9,3 +9,7 @@ Scalar Config::pRelax = 0.3;
 Scalar Config::uTolerance = 1e-5;
 Scalar Config::pTolerance = 1e-5;
 Index  Config::maxIterations = 10'000;
+
+using namespace Interpolation::Schemes;
+Gradient::Type Config::gradientScheme = Gradient::LEAST_SQAURE;
+Convection::Type Config::convectionScheme = Convection::UPWIND;

@@ -61,7 +61,7 @@ Index MeshBase::getFaceOwner(Index faceIdx) const
 }
 
 
-List<Index> MeshBase::getCellFaces(Index cellIdx) const
+List<Index> const& MeshBase::getCellFaces(Index cellIdx) const
 {
     return m_cellFaces[cellIdx];
 }

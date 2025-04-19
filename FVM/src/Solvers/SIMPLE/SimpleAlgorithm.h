@@ -3,6 +3,7 @@
 #include "Utils/Types.h"
 #include "Utils/Timer.h"
 #include "Mesh/MeshBase.h"
+#include "Discretization/Schemes/InterpolationSchemes.h"
 
 
 class SimpleAlgorithm
@@ -15,6 +16,10 @@ public:
 
     Field<Vector>& getU();
     Field<Scalar>& getP();
+
+    // Schemes
+    Interpolation::Schemes::Gradient::Type gradientScheme;
+    Interpolation::Schemes::Convection::Type convectionScheme;
 
 private:
 
@@ -37,6 +42,7 @@ private:
 
     // associated mesh
     MeshBase const& m_mesh;
+
 
     void initFields();
     void computePressureGradient();

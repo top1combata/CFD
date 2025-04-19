@@ -16,21 +16,21 @@ public:
     Scalar getCellVolume(Index cellIdx) const;
 
     //faces
-    Index           getFaceAmount() const;
+    Index               getFaceAmount() const;
 
-    Vector          getFaceCentroid(Index faceIdx) const;
+    Vector              getFaceCentroid(Index faceIdx) const;
 
-    bool            isBoundaryFace(Index faceIdx) const;
+    bool                isBoundaryFace(Index faceIdx) const;
 
-    Array<Index, 2> getFaceNeighbors(Index faceIdx) const;
+    Array<Index, 2>     getFaceNeighbors(Index faceIdx) const;
 
-    Vector          getFaceVector(Index faceIdx) const;
+    Vector              getFaceVector(Index faceIdx) const;
 
-    Boundaries      getFaceBoundary(Index faceIdx) const;
+    Boundaries          getFaceBoundary(Index faceIdx) const;
 
-    Index           getFaceOwner(Index faceIdx) const;
+    Index               getFaceOwner(Index faceIdx) const;
 
-    List<Index>     getCellFaces(Index cellIdx) const;
+    List<Index> const&  getCellFaces(Index cellIdx) const;
 
 
     bool useNonOrthogonalCorrection = false;

@@ -76,8 +76,8 @@ template<class U, class V>
 LinearCombination<U,V> operator/(LinearCombination<U,V>, Scalar);
 
 
-// product with scalar or vector
-// in case of multiplying by vector coeffs of the result calculated as outer prodcut
+// Product with scalar or vector
+// In case of multiplying by vector coeffs of the result calculated as outer prodcut
 template<class VarType, class CoeffType, class T>
 LinearCombination<VarType, typename ProductType<CoeffType, T>::type>
 operator*(LinearCombination<VarType, CoeffType> const&, T)
