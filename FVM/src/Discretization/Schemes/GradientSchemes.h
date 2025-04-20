@@ -73,7 +73,11 @@ LinearCombination<T, Vector> leastSquareGradientImpl
         rhs += Vector(weight * radiusVector) * fieldChange;
     }
 
-    systemMatrix(2,2) = 1;
+    // For 2D case matrix is degenerate
+    if (mesh.is2D())
+    {
+        systemMatrix(2,2) = 1;
+    }
     Tensor systemMatrixInverse = systemMatrix.inverse();
 
     // Inplace solving system
@@ -85,78 +89,5 @@ LinearCombination<T, Vector> leastSquareGradientImpl
 
     return rhs;
 }
-
-
-template<class T>
-LinearCombination<T, Scalar> faceNormalGradient
-(
-    MeshBase const& mesh,
-    Index cellFromIdx, 
-    Index faceIdx,
-    BoundaryConditionGetter<T> const& boundaries
-)
-{
-    if (mesh.isBoundaryFace(faceIdx))
-    {
-        auto [boundaryValue, boundaryType] = boundaries(faceIdx);
-
-        using enum BoundaryConditionType;
-
-        switch (boundaryType)
-        {
-        case FIXED_GRADIENT:
-            return LinearCombination<T, Scalar>(boundaryValue);
-        
-        case FIXED_VALUE:
-            Scalar dist = Geometry::distanceCellToFace(mesh, cellFromIdx, faceIdx);
-
-            LinearCombination<T> result = {{-1/dist, cellFromIdx}};
-            result += boundaryValue / dist;
-            return result;
-        }
-    }
-
-    // general case
-    auto [tmpIdx1, tmpIdx2] = mesh.getFaceNeighbors(faceIdx);
-    Index cellToIdx = (tmpIdx1 == cellFromIdx ? tmpIdx2 : tmpIdx1);
-
-    Scalar distanceBetweenCells = Geometry::distanceCellToCell(mesh, cellFromIdx, cellToIdx);
-    LinearCombination<T, Scalar> finiteDifference = 
-    {
-        {1 / distanceBetweenCells, cellToIdx},
-        {-1 / distanceBetweenCells, cellFromIdx},
-    };
-
-    if (!mesh.useNonOrthogonalCorrection)
-    {
-        return finiteDifference;
-    }
-
-    auto cellFromGradient = leastSquareGradientImpl(mesh, cellFromIdx, boundaries);
-    auto cellToGradient = leastSquareGradientImpl(mesh, cellToIdx, boundaries);
-
-    Vector unitDirection = Geometry::cellToCellUnitVector(mesh, cellFromIdx, cellToIdx);
-    Scalar cellFromDistanceToFace = Geometry::distanceCellToFaceInDirection(mesh, cellFromIdx, faceIdx, unitDirection);
-
-    Scalar cellFromFactor = cellFromDistanceToFace / distanceBetweenCells;
-    auto faceGradient = cellFromFactor * cellFromGradient + (1 - cellFromFactor) * cellToGradient;
-
-    Vector faceVector = mesh.getFaceVector(faceIdx).normalized();
-    if (mesh.getFaceOwner(faceIdx) != cellFromIdx)
-    {
-        faceVector *= -1;
-    }
-
-    // Using over-relaxed approach
-    Vector orthogonalComponent = faceVector.norm() / faceVector.dot(unitDirection) * unitDirection;
-    Vector nonOrthogonalComponent = faceVector - orthogonalComponent;
-    
-    return 
-    (
-        finiteDifference * orthogonalComponent.norm() +
-        faceGradient.dot(nonOrthogonalComponent)
-    );
-}
-
 
 } // namespace Interpolation::Schemes::Gradient

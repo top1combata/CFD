@@ -78,3 +78,9 @@ PolyMesh2D::PolyMesh2D(std::istream& stream)
         }
     }
 }
+
+
+bool PolyMesh2D::is2D() const
+{
+    return true;
+}

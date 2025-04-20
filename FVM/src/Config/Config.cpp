@@ -11,5 +11,5 @@ Scalar Config::pTolerance = 1e-5;
 Index  Config::maxIterations = 10'000;
 
 using namespace Interpolation::Schemes;
-Gradient::Type Config::gradientScheme = Gradient::LEAST_SQAURE;
+Gradient::Type Config::gradientScheme = Gradient::GREEN_GAUSE;
 Convection::Type Config::convectionScheme = Convection::UPWIND;

@@ -3,6 +3,7 @@
 #include "Schemes/InterpolationSchemes.h"
 #include "Schemes/BasicInterpolation.h"
 #include "Schemes/GradientSchemes.h"
+#include "Schemes/GradientComputation.h"
 #include "Schemes/ConvectionSchemes.h"
 
 
@@ -10,33 +11,7 @@ namespace Interpolation
 {
 
 template<class T>
-LinearCombination<T, Vector> cellGradient
-(
-    MeshBase const& mesh, 
-    Index cellIdx,
-    BoundaryConditionGetter<T> const& boundaries,
-    Schemes::Gradient::Type schemeType
-)
-{
-    switch (schemeType)
-    {
-        case Schemes::Gradient::GREEN_GAUSE:
-            return Schemes::Gradient::greenGauseGradientImpl
-            (
-                mesh, cellIdx, boundaries
-            );
-
-        case Schemes::Gradient::LEAST_SQAURE:
-            return Schemes::Gradient::leastSquareGradientImpl
-            (
-                mesh, cellIdx, boundaries
-            );
-    }
-}
-
-
-template<class T>
-LinearCombination<T, Scalar> convectionFluxOverCell
+LinearCombination<T, Scalar> computeConvectionFluxOverCell
 (
     MeshBase const& mesh, 
     Index cellIdx, 
@@ -50,8 +25,29 @@ LinearCombination<T, Scalar> convectionFluxOverCell
     decltype(&Schemes::Convection::upwindImpl<T>) schemeImpl;
     switch (schemeType)
     {
+        case Schemes::Convection::CENTRAL_DIFFERENCE:
+            schemeImpl = &Schemes::Convection::centralDifferenceImpl;
+            break;
+
         case Schemes::Convection::UPWIND:
             schemeImpl = &Schemes::Convection::upwindImpl;
+            break;
+
+        case Schemes::Convection::DOWNWIND:
+            schemeImpl = &Schemes::Convection::downwindImpl;
+            break;
+
+        case Schemes::Convection::FROMM:
+            schemeImpl = &Schemes::Convection::frommImpl;
+            break;
+
+        case Schemes::Convection::SOU:
+            schemeImpl = &Schemes::Convection::souImpl;
+            break;
+
+        case Schemes::Convection::QUICK:
+            schemeImpl = &Schemes::Convection::quickImpl;
+            break;
     }
 
     for (Index faceIdx : mesh.getCellFaces(cellIdx))
@@ -78,7 +74,7 @@ LinearCombination<T, Scalar> convectionFluxOverCell
 
 
 template<class T>
-LinearCombination<T, Scalar> diffusionFluxOverCell
+LinearCombination<T, Scalar> computeDiffusionFluxOverCell
 (
     MeshBase const& mesh, 
     Index cellIdx, 
@@ -94,7 +90,7 @@ LinearCombination<T, Scalar> diffusionFluxOverCell
             faceVector *= -1;
         }
         flux += faceVector.norm() *
-        Schemes::Gradient::faceNormalGradient
+        computeFaceNormalGradient
         (
             mesh, cellIdx, faceIdx, boundaries
         ); 
@@ -103,7 +99,7 @@ LinearCombination<T, Scalar> diffusionFluxOverCell
 }
 
 
-inline Vector RhieChowVelocityOnFace
+inline Vector computeRhieChowVelocityOnFace
 (
     MeshBase const& mesh,
     Index faceIdx,
@@ -125,7 +121,7 @@ inline Vector RhieChowVelocityOnFace
     Scalar VbyA_f = valueOnFace(mesh, faceIdx, zeroGradGetter<Scalar>()).evaluate(VbyA);
 
     Index cellIdx = mesh.getFaceOwner(faceIdx);
-    Scalar faceNormalGrad = Schemes::Gradient::faceNormalGradient(mesh, cellIdx, faceIdx, pBoundaries).evaluate(p);
+    Scalar faceNormalGrad = computeFaceNormalGradient(mesh, cellIdx, faceIdx, pBoundaries).evaluate(p);
     Vector avgFaceGradient = valueOnFace(mesh, faceIdx, zeroGradGetter<Vector>()).evaluate(pGrad);
     // correction
     Vector faceVector = mesh.getFaceVector(faceIdx);

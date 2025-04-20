@@ -200,7 +200,7 @@ TEST(TestLinearCombination, MulDivAssign)
     sortIndices(lc2);
     EXPECT_EQ(lc2.terms, std::vector<Term<Scalar>>({{1.75, 0}, {1, 1}, {.75, 2}}));
 
-    auto lc3 = lc * 3.5;
+    auto lc3 = lc * Scalar(3.5);
     EXPECT_EQ(lc3.bias, 35);
     sortIndices(lc3);
     EXPECT_EQ(lc3.terms, std::vector<Term<Scalar>>({{12.25, 0}, {7, 1}, {5.25, 2}}));

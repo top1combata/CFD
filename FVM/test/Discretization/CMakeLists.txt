@@ -1,4 +1,4 @@
 target_sources(${TEST_EXECUTABLE} PRIVATE
-    Interpolation.test.cpp
+    Gradient.test.cpp
     LinearCombination.test.cpp
 )

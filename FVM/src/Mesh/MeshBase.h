@@ -35,6 +35,8 @@ public:
 
     bool useNonOrthogonalCorrection = false;
 
+    virtual bool is2D() const = 0;
+
     virtual ~MeshBase() = default;
 
 protected:

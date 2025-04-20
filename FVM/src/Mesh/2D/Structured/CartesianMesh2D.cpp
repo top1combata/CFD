@@ -103,3 +103,8 @@ void CartesianMesh2D::setRightBoundary(Boundaries boundaries)
         m_boundariesMap[faceIdx] = boundaries;
     }
 }
+
+bool CartesianMesh2D::is2D() const
+{
+    return true;
+}

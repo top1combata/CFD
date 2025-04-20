@@ -19,6 +19,8 @@ public:
     
     void setRightBoundary(Boundaries boundaries);
 
+    bool is2D() const override;
+
 protected:
 
     Index m_nx;

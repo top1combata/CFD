@@ -17,7 +17,12 @@ namespace Interpolation::Schemes::Convection
 
 enum Type
 {
-    UPWIND
+    CENTRAL_DIFFERENCE,
+    UPWIND,
+    DOWNWIND,
+    FROMM,
+    SOU,
+    QUICK
 };
 
 }
