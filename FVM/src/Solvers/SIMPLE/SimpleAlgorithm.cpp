@@ -3,7 +3,6 @@
 #include "Config/Config.h"
 #include "Utils/MatrixSolver.h"
 #include <iostream>
-#include <format>
 #include <algorithm>
 #include <cassert>
 #include <cmath>
@@ -52,7 +51,7 @@ void SimpleAlgorithm::solve()
     // How much time elapsed
     for (auto&& [eventName, eventTimer] : m_timers)
     {
-        std::cout << std::format("{} seconds for {}\n\n", eventTimer.getElapsedTime(), eventName);
+        std::cout << eventTimer.getElapsedTime() << " seconds for " << eventName << "\n\n";
     }
 }
 

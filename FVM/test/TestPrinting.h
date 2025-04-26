@@ -1,7 +1,10 @@
 #pragma once
 
 #include <Utils/Types.h>
+#include <Boundary/BoundaryCondition.h>
 #include <Discretization/LinearCombination.h>
+
+#include <sstream>
 
 
 inline void PrintTo(Scalar scalar, std::ostream* os)
@@ -51,4 +54,68 @@ void PrintTo(LinearCombination<U, V> const& lc, std::ostream* os)
         *os << ", ";
     }
     *os << "}";
+}
+
+
+using std::to_string;
+
+inline std::string to_string(Vector vec)
+{
+    std::stringstream ss;
+    PrintTo(vec, &ss);
+    return ss.str();
+}
+
+
+inline std::string to_string(Tensor tensor)
+{
+    std::stringstream ss;
+    PrintTo(tensor, &ss);
+    return ss.str();
+}
+
+
+template<class T>
+std::string to_string(Term<T> const& term)
+{
+    std::stringstream ss;
+    PrintTo(term, &ss);
+    return ss.str();
+}
+
+
+template<class U, class V>
+std::string to_string(LinearCombination<U, V> const& lc)
+{
+    std::stringstream ss;
+    PrintTo(lc, &ss);
+    return ss.str();
+}
+
+
+inline std::string to_string(BoundaryConditionType type)
+{
+    return (type == BoundaryConditionType::FIXED_VALUE ? "fixed value" : "fixed gradient");
+}
+
+
+template <class T> std::string to_string(BoundaryCondition<T> const& boundary)
+{
+    return std::string("{")
+        .append(to_string(boundary.type))
+        .append(", ")
+        .append(to_string(boundary.value))
+        .append("}")
+    ;
+}
+
+
+inline std::string to_string(Boundaries const& boundaries)
+{
+    return std::string("{U")
+        .append(to_string(boundaries.uBoundary))
+        .append(", p")
+        .append(to_string(boundaries.pBoundary))
+        .append("}")
+    ;
 }

@@ -1,8 +1,9 @@
+#include <gtest/gtest.h>
+#include "TestUtils.h"
+
 #include "Solvers/SIMPLE/SimpleAlgorithm.h"
 #include "Mesh/2D/Structured/CartesianMesh2D.h"
 #include "Config/Config.h"
-
-#include <gtest/gtest.h>
 
 
 class PoiseuilleFixture : public testing::Test
@@ -10,7 +11,7 @@ class PoiseuilleFixture : public testing::Test
 protected:
 
     static constexpr Index nx = 10;
-    static constexpr Index ny = 10;
+    static constexpr Index ny = 9;
     static constexpr Scalar lx = 1.0;
     static constexpr Scalar ly = 1.0;
 
@@ -20,8 +21,8 @@ protected:
     static constexpr Scalar density = 1e3;
     static constexpr Scalar viscosity = 1;
 
-    static constexpr Scalar uRelax = 0.5;
-    static constexpr Scalar pRelax = 0.2;
+    static constexpr Scalar uRelax = 0.7;
+    static constexpr Scalar pRelax = 0.3;
     
     static constexpr Scalar uTolerance = 1e-5;
     static constexpr Scalar pTolerance = 1e-7;
@@ -40,7 +41,7 @@ protected:
 
         Config::density = density;
         Config::viscosity = viscosity;
-        
+
         Config::uRelax = uRelax;
         Config::pRelax = pRelax;
 
@@ -60,14 +61,14 @@ protected:
 
         ASSERT_TRUE(solver.isConverged());
 
-        for (Index cellIdx = 0; cellIdx < 1 && cellIdx < m_mesh.getCellAmount(); cellIdx++)
+        for (Index cellIdx = 0; cellIdx < m_mesh.getCellAmount(); cellIdx++)
         {
             Vector cellCenter = m_mesh.getCellCentroid(cellIdx);
             Scalar y = cellCenter.y() - ly / 2;
             Scalar x = cellCenter.x();
     
             Scalar expectedPressure = ((lx - x) * inletPressure + x * outletPressure) / lx;
-            Scalar maxVelocity = (inletPressure - outletPressure) / (16 * viscosity * lx) * ly * ly;
+            Scalar maxVelocity = (inletPressure - outletPressure) * ly * ly / (8 * viscosity * lx);
             Vector expectedVelocity = {maxVelocity * (1 - std::pow(y / (ly / 2), 2)), 0, 0};
     
             auto const& pressureField = solver.getPressure(0);
@@ -76,11 +77,10 @@ protected:
             Vector velocity = velocityField(cellIdx);
             Vector diff = expectedVelocity - velocity;
     
-            constexpr Scalar tolerance = 1e-4;
-            EXPECT_NEAR(pressureField(cellIdx), expectedPressure, tolerance);
+            EXPECT_NEAR(pressureField(cellIdx), expectedPressure, 1e-6);
             
-            EXPECT_LE(diff.norm() / std::max(Scalar(1), expectedVelocity.norm()), tolerance)
-                << expectedVelocity << ' ' << velocity;
+            EXPECT_LE(diff.norm() / expectedVelocity.norm(), 0.1)
+                << "value is " << to_string(velocity) << ", but expected " << to_string(expectedVelocity);
         }
     }
 

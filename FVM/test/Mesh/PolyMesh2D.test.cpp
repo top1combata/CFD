@@ -35,7 +35,7 @@ TEST_F(TestPolyMesh2D, CellCentroidArrayTest)
             Vector expectedCentroid = {x * dx + dx / 2, y * dy + dy / 2, 0};
             Vector centroid = getCellCentroid(cellIdx);
 
-            EXPECT_LT((centroid - expectedCentroid).norm(), tolerance) << std::format("cell idx is {}", cellIdx);
+            EXPECT_LT((centroid - expectedCentroid).norm(), tolerance) << "cell idx is " << cellIdx;
         }
     }
 }
@@ -49,7 +49,7 @@ TEST_F(TestPolyMesh2D, CellVolumesArrayTest)
     {
         Scalar cellVolume = getCellVolume(cellIdx);
 
-        EXPECT_NEAR(cellVolume, expectedCellVolume, tolerance) << std::format("cell idx is {}", cellIdx);
+        EXPECT_NEAR(cellVolume, expectedCellVolume, tolerance) << "cell idx is " << cellIdx;
     }
 }
 
@@ -68,7 +68,7 @@ TEST_F(TestPolyMesh2D, CellFacesArrayTest)
             List<Index> faces = getCellFaces(cellIdx);
             std::sort(faces.begin(), faces.end());
 
-            EXPECT_EQ(faces, expectedFaces) << std::format("cell idx is {}", cellIdx);
+            EXPECT_EQ(faces, expectedFaces) << "cell idx is " << cellIdx;
         }
     }
 }
@@ -84,7 +84,7 @@ TEST_F(TestPolyMesh2D, FaceVectorArrayTest)
         if (faceIdx < nx || faceIdx % (2 * nx + 1) == nx)
             expectedFaceVector *= -1;
 
-        EXPECT_LT((faceVector - expectedFaceVector).norm(), tolerance) << std::format("face idx is {}", faceIdx);
+        EXPECT_LT((faceVector - expectedFaceVector).norm(), tolerance) << "face idx is " << faceIdx;
     }
 }
 
@@ -102,7 +102,7 @@ TEST_F(TestPolyMesh2D, FaceCentroidArrayTest)
         expectedCentroid += (faceIdx % (2 * nx + 1) < nx ? Vector{dx / 2, 0, 0} : Vector{0, dy / 2, 0});
         Vector centroid = getFaceCentroid(faceIdx);
 
-        EXPECT_LT((centroid - expectedCentroid).norm(), tolerance) << std::format("face idx is {}", faceIdx);
+        EXPECT_LT((centroid - expectedCentroid).norm(), tolerance) << "face idx is " << faceIdx;
     }
 }
 
@@ -129,7 +129,7 @@ TEST_F(TestPolyMesh2D, FaceNeighborsArrayTest)
 
         auto neighbours = getFaceNeighbors(faceIdx);
 
-        EXPECT_EQ(neighbours, expectedNeighbours) << std::format("face idx is {}", faceIdx);
+        EXPECT_EQ(neighbours, expectedNeighbours) << "face idx is " << faceIdx;
     }
 }
 

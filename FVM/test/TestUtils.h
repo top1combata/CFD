@@ -1,43 +1,24 @@
 #pragma once
 
+#include "TestPrinting.h"
 #include <gtest/gtest.h>
 
 #include <Boundary/BoundaryCondition.h>
 #include <Discretization/LinearCombination.h>
 #include <Utils/Types.h>
 
-#include <format>
 #include <random>
 
-using std::to_string;
 
-inline std::string to_string(Vector const& vec)
-{
-    return std::format("({}, {}, {})", vec.x(), vec.y(), vec.z());
+#define EXPECT_MAP_VALUE(map, key, value)                                   \
+{                                                                           \
+    EXPECT_TRUE((map).contains(key) && (map)[key] == (value))               \
+        << ((map).contains(key)                                             \
+        ? std::string("value is not exect at key ").append(to_string(key))  \
+            .append(", returned ").append(to_string((map)[key]))            \
+            .append(", expected ").append(to_string(value))                 \
+        : std::string("no value at key ").append(to_string(key)));          \
 }
-
-inline std::string to_string(BoundaryConditionType type)
-{
-    return (type == BoundaryConditionType::FIXED_VALUE ? "fixed value" : "fixed gradient");
-}
-
-template <class T> std::string to_string(BoundaryCondition<T> const& boundary)
-{
-    return std::format("{{{} {}}}", to_string(boundary.type), to_string(boundary.value));
-}
-
-inline std::string to_string(Boundaries const& boundaries)
-{
-    return std::format("{{U{} , p{}}}", to_string(boundaries.uBoundary), to_string(boundaries.pBoundary));
-}
-
-#define EXPECT_MAP_VALUE(map, key, value)                                                                              \
-    {                                                                                                                  \
-        EXPECT_TRUE((map).contains(key) && (map)[key] == (value))                                                      \
-            << ((map).contains(key) ? std::format("value is not exected at key {}, returned {}, expected {}", key,     \
-                                                  to_string((map)[key]), to_string(value))                             \
-                                    : std::format("no value at key {}", key));                                         \
-    }
 
 inline bool operator==(BoundaryCondition<Scalar> const& b1, BoundaryCondition<Scalar> const& b2)
 {

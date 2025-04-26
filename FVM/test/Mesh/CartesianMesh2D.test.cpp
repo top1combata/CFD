@@ -42,7 +42,7 @@ TEST_P(TestCartesinaMesh2D, CellCentroidArrayTest)
             Vector expectedCentroid = {x * dx + dx / 2, y * dy + dy / 2, 0};
             Vector centroid = getCellCentroid(cellIdx);
 
-            EXPECT_LT((centroid - expectedCentroid).norm(), tolerance) << std::format("cell idx is {}", cellIdx);
+            EXPECT_LT((centroid - expectedCentroid).norm(), tolerance) << "cell idx is " << cellIdx;
         }
     }
 }
@@ -56,7 +56,7 @@ TEST_P(TestCartesinaMesh2D, CellVolumesArrayTest)
     {
         Scalar cellVolume = getCellVolume(cellIdx);
 
-        EXPECT_NEAR(cellVolume, expectedCellVolume, tolerance) << std::format("cell idx is {}", cellIdx);
+        EXPECT_NEAR(cellVolume, expectedCellVolume, tolerance) << "cell idx is " << cellIdx;
     }
 }
 
@@ -75,7 +75,7 @@ TEST_P(TestCartesinaMesh2D, CellFacesArrayTest)
             List<Index> faces = getCellFaces(cellIdx);
             std::sort(faces.begin(), faces.end());
 
-            EXPECT_EQ(faces, expectedFaces) << std::format("cell idx is {}", cellIdx);
+            EXPECT_EQ(faces, expectedFaces) << "cell idx is " << cellIdx;
         }
     }
 }
@@ -91,7 +91,7 @@ TEST_P(TestCartesinaMesh2D, FaceVectorArrayTest)
         if (faceIdx < nx || faceIdx % (2 * nx + 1) == nx)
             expectedFaceVector *= -1;
 
-        EXPECT_LT((faceVector - expectedFaceVector).norm(), tolerance) << std::format("face idx is {}", faceIdx);
+        EXPECT_LT((faceVector - expectedFaceVector).norm(), tolerance) << "face idx is " << faceIdx;
     }
 }
 
@@ -109,7 +109,7 @@ TEST_P(TestCartesinaMesh2D, FaceCentroidArrayTest)
         expectedCentroid += (faceIdx % (2 * nx + 1) < nx ? Vector{dx / 2, 0, 0} : Vector{0, dy / 2, 0});
         Vector centroid = getFaceCentroid(faceIdx);
 
-        EXPECT_LT((centroid - expectedCentroid).norm(), tolerance) << std::format("face idx is {}", faceIdx);
+        EXPECT_LT((centroid - expectedCentroid).norm(), tolerance) << "face idx is " << faceIdx;
     }
 }
 
@@ -136,7 +136,7 @@ TEST_P(TestCartesinaMesh2D, FaceNeighborsArrayTest)
 
         auto neighbours = getFaceNeighbors(faceIdx);
 
-        EXPECT_EQ(neighbours, expectedNeighbours) << std::format("face idx is {}", faceIdx);
+        EXPECT_EQ(neighbours, expectedNeighbours) << "face idx is " << faceIdx;
     }
 }
 
@@ -188,7 +188,15 @@ TEST_P(TestCartesinaMesh2D, BottomBoundariesTest)
         EXPECT_MAP_VALUE(m_boundariesMap, faceIdx, boundaries);
 }
 
-INSTANTIATE_TEST_SUITE_P(TestParamTest, TestCartesinaMesh2D,
-                         testing::Values(CartesianMeshTestParam{2, 2, 1.0, 2.3}, CartesianMeshTestParam{4, 9, 1.0, 1.0},
-                                         CartesianMeshTestParam{21, 21, 10.0, 10.0},
-                                         CartesianMeshTestParam{16, 6, 0.4, 0.2}));
+INSTANTIATE_TEST_SUITE_P
+(
+    TestParamTest,
+    TestCartesinaMesh2D,
+    testing::Values
+    (
+        CartesianMeshTestParam{2, 2, 1.0, 2.3},
+        CartesianMeshTestParam{4, 9, 1.0, 1.0},
+        CartesianMeshTestParam{21, 21, 10.0, 10.0},
+        CartesianMeshTestParam{16, 6, 0.4, 0.2}
+    )
+);
