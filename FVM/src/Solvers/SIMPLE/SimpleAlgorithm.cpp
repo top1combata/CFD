@@ -14,9 +14,9 @@
 
 
 SimpleAlgorithm::SimpleAlgorithm(MeshBase const& mesh) 
-    : gradientScheme(Config::gradientScheme)
+    : SolverBase(mesh)
+    , gradientScheme(Config::gradientScheme)
     , convectionScheme(Config::convectionScheme)
-    , m_mesh(mesh)
 {}
 
 
@@ -26,7 +26,12 @@ void SimpleAlgorithm::solve()
 
     // SIMPLE loop
     m_timers["total"].start();
-    for (Index iterNum = 1; iterNum <= Config::maxIterations && !converged(); iterNum++)
+    for 
+    (
+        Index iterNum = 1; 
+        iterNum <= Config::maxIterations && !(converged() || diverged()); 
+        iterNum++
+    )
     {
         computePressureGradient();
         solveMomentum();
@@ -34,9 +39,14 @@ void SimpleAlgorithm::solve()
         correctPressure();
 
         std::cout << "Iteration #" << iterNum << 
-            "\n\tp residual : " << m_pResidual << 
+            "\n\tp residual : " << m_pressureResidual << 
             "\n\n";
     }
+
+    m_velocity.push_back(m_currentVelocity);
+    m_pressure.push_back(m_currentPressure);
+    m_converged = converged();
+
     m_timers["total"].stop();
 
     // How much time elapsed
@@ -47,12 +57,20 @@ void SimpleAlgorithm::solve()
 }
 
 
-bool SimpleAlgorithm::converged()
+bool SimpleAlgorithm::converged() const
 {
     return  
     (
-        m_pResidual < Config::pTolerance ||
-        std::isnan(m_pResidual)
+        m_pressureResidual && m_pressureResidual < Config::pTolerance
+    );
+}
+
+
+bool SimpleAlgorithm::diverged() const
+{
+    return  
+    (
+        std::isnan(m_pressureResidual) || m_pressureResidual == 0
     );
 }
 
@@ -63,17 +81,17 @@ void SimpleAlgorithm::solveMomentum()
     generateMomentumSystem();
     m_timers["generating linear systems"].stop();
 
-    relaxSystem(m_UMatrix, m_USource, m_U, Config::uRelax);
+    relaxSystem(m_momentumSystemMatrix, m_momentumSystemSource, m_currentVelocity, Config::uRelax);
 
     // Field V/A should be treated after under relaxation
     computeVbyA();
 
     // Solving for new velocity field
     m_timers["solving linear systems"].start();
-    auto sol = solveSystem(m_UMatrix, m_USource);
+    auto sol = solveSystem(m_momentumSystemMatrix, m_momentumSystemSource);
     for (Index cellIdx = 0; cellIdx < m_mesh.getCellAmount(); cellIdx++)
     {
-        m_U(cellIdx) = sol.row(cellIdx).transpose();
+        m_currentVelocity(cellIdx) = sol.row(cellIdx).transpose();
     }
     m_timers["solving linear systems"].stop();
 }
@@ -86,7 +104,7 @@ void SimpleAlgorithm::correctPressure()
     m_timers["generating linear systems"].stop();
 
     m_timers["solving linear systems"].start();
-    Field<Scalar> pCorrection = solveSystem(m_pMatrix, m_pSource);
+    Field<Scalar> pCorrection = solveSystem(m_pressureSystemMatrix, m_pressureSystemSource);
     m_timers["solving linear systems"].stop();
 
     // Idk how, but explicit under relaxtion gives faster convergence than implicit
@@ -95,23 +113,11 @@ void SimpleAlgorithm::correctPressure()
     Field<Vector> uCorrection = getVelocityCorrection(pCorrection);
     Field<Scalar> massFluxesCorrection = getMassFluxesCorrection(pCorrection);
 
-    m_pResidual = relativeResidual(m_p, pCorrection);
+    m_pressureResidual = relativeResidual(m_currentPressure, pCorrection);
 
-    m_U          += uCorrection;
-    m_p          += pCorrection;
+    m_currentVelocity          += uCorrection;
+    m_currentPressure          += pCorrection;
     m_massFluxes += massFluxesCorrection;
-}
-
-
-Field<Vector>& SimpleAlgorithm::getU()
-{
-    return m_U;
-}
-
-
-Field<Scalar>& SimpleAlgorithm::getP()
-{
-    return m_p;
 }
 
 
@@ -121,15 +127,15 @@ void SimpleAlgorithm::initFields()
     Index totalFaces = m_mesh.getFaceAmount();
 
     // Initial guesses
-    m_p           = Field<Scalar>::Constant(totalCells, 0);
-    m_U           = Field<Vector>::Constant(totalCells, {0,0,0});
+    m_currentPressure           = Field<Scalar>::Constant(totalCells, 0);
+    m_currentVelocity           = Field<Vector>::Constant(totalCells, {0,0,0});
 
     m_massFluxes = Field<Scalar>(totalFaces);
-    m_pGrad      = Field<Vector>(totalCells);
-    m_UMatrix    = SparseMatrix(totalCells, totalCells);
-    m_USource    = Matrix(totalCells, 3);
-    m_pMatrix    = SparseMatrix(totalCells, totalCells);
-    m_pSource    = Matrix(totalCells, 1);
+    m_pressureGradient      = Field<Vector>(totalCells);
+    m_momentumSystemMatrix    = SparseMatrix(totalCells, totalCells);
+    m_momentumSystemSource    = Matrix(totalCells, 3);
+    m_pressureSystemMatrix    = SparseMatrix(totalCells, totalCells);
+    m_pressureSystemSource    = Matrix(totalCells, 1);
     m_VbyA        = Field<Scalar>(totalCells);
     
     m_timers.clear();
@@ -173,13 +179,13 @@ void SimpleAlgorithm::computePressureGradient()
 #endif
     for (Index cellIdx = 0; cellIdx < totalCells; cellIdx++)
     {
-        m_pGrad(cellIdx) = 
+        m_pressureGradient(cellIdx) = 
         (
             Interpolation::computeCellGradient
             (
                 m_mesh, cellIdx, pBoundaries, gradientScheme
             )
-            .evaluate(m_p)
+            .evaluate(m_currentPressure)
         );
     }
     m_timers["explicit field computation"].stop();
@@ -204,7 +210,7 @@ void SimpleAlgorithm::computeMassFluxes()
         (
             Interpolation::computeRhieChowVelocityOnFace
             (
-                m_mesh, faceIdx, m_U, m_p, m_pGrad, m_VbyA, uBoundaries, pBoundaries
+                m_mesh, faceIdx, m_currentVelocity, m_currentPressure, m_pressureGradient, m_VbyA, uBoundaries, pBoundaries
             )
         );
 
@@ -241,7 +247,7 @@ void SimpleAlgorithm::generateMomentumSystem()
             )
         );
 
-        Vector pressureGradient = m_pGrad(cellIdx) * m_mesh.getCellVolume(cellIdx);
+        Vector pressureGradient = m_pressureGradient(cellIdx) * m_mesh.getCellVolume(cellIdx);
 
         LinearCombination<Vector> uEqn;
         uEqn += convection;
@@ -251,7 +257,7 @@ void SimpleAlgorithm::generateMomentumSystem()
         return uEqn;
     };
 
-    generateSparseSystemImpl(m_UMatrix, m_USource, m_mesh.getCellAmount(), uEqnGetter);
+    generateSparseSystemImpl(m_momentumSystemMatrix, m_momentumSystemSource, m_mesh.getCellAmount(), uEqnGetter);
 }
 
 
@@ -300,7 +306,7 @@ void SimpleAlgorithm::generatePressureCorrectionSystem()
         return pCorrEqn;
     };
     
-    generateSparseSystemImpl(m_pMatrix, m_pSource, m_mesh.getCellAmount(), pCorrEqnGetter);
+    generateSparseSystemImpl(m_pressureSystemMatrix, m_pressureSystemSource, m_mesh.getCellAmount(), pCorrEqnGetter);
 }
 
 
@@ -308,7 +314,7 @@ void SimpleAlgorithm::computeVbyA()
 {
     m_timers["explicit field computation"].start();
     Index totalCells = m_mesh.getCellAmount();
-    auto diagonal = m_UMatrix.diagonal();
+    auto diagonal = m_momentumSystemMatrix.diagonal();
 
 #ifdef _OPENMP
     #pragma omp parallel for

@@ -16,6 +16,7 @@ add_executable(${TEST_EXECUTABLE})
 
 add_subdirectory(Discretization)
 add_subdirectory(Mesh)
+add_subdirectory(Solvers)
 
 target_include_directories(${TEST_EXECUTABLE} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 target_link_libraries(${TEST_EXECUTABLE} GTest::gtest_main)

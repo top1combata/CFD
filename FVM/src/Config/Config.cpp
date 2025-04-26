@@ -12,4 +12,4 @@ Index  Config::maxIterations = 10'000;
 
 using namespace Interpolation::Schemes;
 Gradient::Type Config::gradientScheme = Gradient::GREEN_GAUSE;
-Convection::Type Config::convectionScheme = Convection::UPWIND;
+Convection::Type Config::convectionScheme = Convection::SOU;

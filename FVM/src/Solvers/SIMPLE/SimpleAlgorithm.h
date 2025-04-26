@@ -3,19 +3,17 @@
 #include "Utils/Types.h"
 #include "Utils/Timer.h"
 #include "Mesh/MeshBase.h"
+#include "Solvers/SolverBase.h"
 #include "Discretization/Schemes/InterpolationSchemes.h"
 
 
-class SimpleAlgorithm
+class SimpleAlgorithm : public SolverBase
 {
 public:
 
     SimpleAlgorithm(MeshBase const& mesh);
 
-    void solve();
-
-    Field<Vector>& getU();
-    Field<Scalar>& getP();
+    void solve() override;
 
     // Schemes
     Interpolation::Schemes::Gradient::Type gradientScheme;
@@ -23,25 +21,24 @@ public:
 
 private:
 
-    // fields
-    Field<Vector> m_U;
-    Field<Scalar> m_p;
-    Field<Vector> m_pGrad;
+    // Fields in the current iteration
+    Field<Vector> m_currentVelocity;
+    Field<Scalar> m_currentPressure;
+    Field<Vector> m_pressureGradient;
     Field<Scalar> m_VbyA;
     Field<Scalar> m_massFluxes;
-    // momentum matrix and
-    SparseMatrix m_UMatrix;
-    Matrix m_USource;
-    // pressure correction matrix
-    SparseMatrix m_pMatrix;
-    Matrix m_pSource;
+
+    // Momentum matrix and rhs
+    SparseMatrix m_momentumSystemMatrix;
+    Matrix m_momentumSystemSource;
+
+    // Pressure correction matrix and rhs
+    SparseMatrix m_pressureSystemMatrix;
+    Matrix m_pressureSystemSource;
 
     HashMap<std::string, Timer> m_timers;
 
-    Scalar m_pResidual = 1;
-
-    // associated mesh
-    MeshBase const& m_mesh;
+    Scalar m_pressureResidual = 1;
 
 
     void initFields();
@@ -50,14 +47,14 @@ private:
     void computeMassFluxes();
     void correctPressure();
 
-    bool converged();
+    bool converged() const;
+    bool diverged() const;
 
     void generateMomentumSystem();
     void generatePressureCorrectionSystem();
     void computeVbyA();
     Field<Vector> getVelocityCorrection(Field<Scalar> const& pCorrection);
     Field<Scalar> getMassFluxesCorrection(Field<Scalar> const& pCorrection);
-
 
     Scalar relativeResidual(Matrix const& field, Matrix const& correction);
 

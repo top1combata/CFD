@@ -6,6 +6,7 @@ add_subdirectory(Discretization)
 add_subdirectory(Mesh)
 add_subdirectory(Solvers)
 add_subdirectory(Utils)
+add_subdirectory(PostProcessing)
 
 target_include_directories(${LIBRARY_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
