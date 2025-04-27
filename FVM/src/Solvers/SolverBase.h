@@ -13,6 +13,10 @@ public:
     virtual void solve() = 0;
     virtual bool isConverged() const;
 
+    bool isTransient() const;
+    void setTransient(bool state = true);
+    Index getTimePointAmount() const;
+
     MeshBase const& getMesh() const;
     Field<Vector> const& getVelocity(Index timePointIdx) const;
     Field<Scalar> const& getPressure(Index timePointIdx) const;
@@ -24,4 +28,5 @@ protected:
     List<Field<Scalar>> m_pressure;
 
     bool m_converged;
+    bool m_isTransient = false;
 };

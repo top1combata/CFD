@@ -1,5 +1,7 @@
 #include "Drawing.h"
 
+#include "Mesh/Geometry.h"
+
 
 sf::View getInitializeView(MeshBase const& mesh)
 {
@@ -62,14 +64,18 @@ List<sf::ConvexShape> getMeshCells(MeshBase const& mesh)
 
 List<Line> getMeshFaces(MeshBase const& mesh)
 {
-    auto getFace = [&mesh](Index faceIdx)
+    constexpr sf::Color FACE_COLOR = {150, 150, 150};
+
+    auto getFace = [&](Index faceIdx)
     {
         Vector faceVector = mesh.getFaceVector(faceIdx);
         Vector orthogonal{faceVector.y(), -faceVector.x(), 0};
         Vector begin = mesh.getFaceCentroid(faceIdx) - orthogonal / 2;
         Vector end = begin + orthogonal;
         
-        return Line(begin, end);
+        Line line(begin, end);
+        line.setColor(FACE_COLOR);
+        return line;
     };
 
     List<Line> faces;
@@ -82,19 +88,40 @@ List<Line> getMeshFaces(MeshBase const& mesh)
 }
 
 
-List<Arrow> getVelocityField(SolverBase const& solver)
+Vector getCellBoundedVector(MeshBase const& mesh, Index cellIdx, Vector direction)
 {
-    auto& field = solver.getVelocity(0);
+    direction.normalize();
+    Scalar distance = std::numeric_limits<Scalar>::max();
+
+    for (Index faceIdx : mesh.getCellFaces(cellIdx))
+    {
+        Scalar distanceToFace = Geometry::distanceCellToFaceInDirection(mesh, cellIdx, faceIdx, direction);
+        distance = std::min(distance, std::abs(distanceToFace));
+    }
+
+    return distance * direction;
+}
+
+
+List<Arrow> getVelocityField(SolverBase const& solver, Index timePointIdx, bool useAbsoluteVectorLength)
+{
+    auto& field = solver.getVelocity(timePointIdx);
     auto const& mesh = solver.getMesh();
     
     List<Arrow> arrows;
     arrows.reserve(mesh.getCellAmount());
     for (Index cellIdx = 0; cellIdx < mesh.getCellAmount(); cellIdx++)
     {
+        Vector direction = field(cellIdx);
+        if (!useAbsoluteVectorLength)
+        {
+            direction = getCellBoundedVector(mesh, cellIdx, direction);
+        }
+
         arrows.emplace_back
         (
             mesh.getCellCentroid(cellIdx),
-            field(cellIdx)
+            direction
         );
     }
 

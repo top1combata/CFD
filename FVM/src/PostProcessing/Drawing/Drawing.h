@@ -11,4 +11,4 @@ List<sf::ConvexShape> getMeshCells(MeshBase const& mesh);
 
 List<Line> getMeshFaces(MeshBase const& mesh);
 
-List<Arrow> getVelocityField(SolverBase const& solver);
+List<Arrow> getVelocityField(SolverBase const& solver, Index timePointIdx, bool useAbsoluteVectorLength);

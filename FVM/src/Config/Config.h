@@ -13,6 +13,11 @@ public:
     static Scalar uRelax;
     static Scalar pRelax;
 
+    // For transient solver
+    static Scalar timeStep;
+    static Scalar timeBegin;
+    static Scalar timeEnd;
+
     static Scalar uTolerance;
     static Scalar pTolerance;
     static Index maxIterations;

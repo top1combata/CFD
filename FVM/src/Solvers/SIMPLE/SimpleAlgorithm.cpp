@@ -23,27 +23,47 @@ void SimpleAlgorithm::solve()
 {
     initFields();
 
-    // SIMPLE loop
-    m_timers["total"].start();
-    for 
-    (
-        Index iterNum = 1; 
-        iterNum <= Config::maxIterations && !(converged() || diverged()); 
-        iterNum++
-    )
+    if (isTransient())
     {
-        computePressureGradient();
-        solveMomentum();
-        computeMassFluxes();
-        correctPressure();
-
-        std::cout << "Iteration #" << iterNum << 
-            "\n\tp residual : " << m_pressureResidual << 
-            "\n\n";
+        if (Config::timeStep == 0)
+        {
+            throw std::runtime_error("Time Step should be non zero value\n");
+        }
+        m_velocity.push_back(m_currentVelocity);
+        m_pressure.push_back(m_currentPressure);
     }
 
-    m_velocity.push_back(m_currentVelocity);
-    m_pressure.push_back(m_currentPressure);
+    // SIMPLE loop
+    m_timers["total"].start();
+    m_currTime = Config::timeBegin;
+    do
+    {
+        m_currTime += Config::timeStep;
+        m_pressureResidual = std::numeric_limits<Scalar>::max();
+
+        for (m_currIterationIdx = 1; m_currIterationIdx <= Config::maxIterations && !(converged() || diverged()); m_currIterationIdx++)
+        {
+            computePressureGradient();
+            solveMomentum();
+            computeMassFluxes();
+            correctPressure();
+
+            printIterationInfo();
+        }
+
+        printTimePointInfo();
+
+        m_velocity.push_back(m_currentVelocity);
+        m_pressure.push_back(m_currentPressure);
+
+        if (diverged())
+        {
+            break;
+        }
+    }
+    while (isTransient() && m_currTime <= Config::timeEnd);
+
+
     m_converged = converged();
 
     m_timers["total"].stop();
@@ -71,6 +91,33 @@ bool SimpleAlgorithm::diverged() const
     (
         std::isnan(m_pressureResidual) || m_pressureResidual == 0
     );
+}
+
+
+void SimpleAlgorithm::printIterationInfo() const
+{
+    if (isTransient())
+    {
+        return;
+    }
+
+    std::cout << "Iteration #" << m_currIterationIdx << 
+        "\n\tPressure residual : " << m_pressureResidual << 
+        "\n\n";
+}
+
+
+void SimpleAlgorithm::printTimePointInfo() const
+{
+    if (!isTransient())
+    {
+        return;
+    }
+
+    std::cout << "Time Point: " << m_currTime <<
+        "\n\tTotal iterations: " << m_currIterationIdx <<
+        "\n\tPressure residual: " << m_pressureResidual <<
+        "\n\n";
 }
 
 
@@ -229,6 +276,8 @@ void SimpleAlgorithm::generateMomentumSystem()
     std::function<LinearCombination<Vector>(Index)> uEqnGetter = 
     [this, uBoundaries = getVelocityBoundaries()](Index cellIdx)
     {
+        Scalar cellVolume = m_mesh.getCellVolume(cellIdx);
+
         LinearCombination<Vector> convection = 
         (
             Interpolation::computeConvectionFluxOverCell
@@ -246,12 +295,22 @@ void SimpleAlgorithm::generateMomentumSystem()
             )
         );
 
-        Vector pressureGradient = m_pressureGradient(cellIdx) * m_mesh.getCellVolume(cellIdx);
+        LinearCombination<Vector> transientTerm;
+        if (isTransient())
+        {
+            // Implicit Euler scheme
+            transientTerm = {{1, cellIdx}};
+            transientTerm -= m_velocity.back()(cellIdx);
+            transientTerm *= cellVolume * Config::density / Config::timeStep;
+        }
+
+        Vector pressureGradient = m_pressureGradient(cellIdx) * cellVolume;
 
         LinearCombination<Vector> uEqn;
         uEqn += convection;
         uEqn -= diffusion;
         uEqn += pressureGradient;
+        uEqn += transientTerm;
 
         return uEqn;
     };

@@ -38,7 +38,9 @@ private:
 
     HashMap<std::string, Timer> m_timers;
 
-    Scalar m_pressureResidual = 1;
+    Index m_currIterationIdx;
+    Scalar m_currTime;
+    Scalar m_pressureResidual;
 
 
     void initFields();
@@ -49,6 +51,9 @@ private:
 
     bool converged() const;
     bool diverged() const;
+
+    void printIterationInfo() const;
+    void printTimePointInfo() const;
 
     void generateMomentumSystem();
     void generatePressureCorrectionSystem();

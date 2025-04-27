@@ -10,6 +10,10 @@ Scalar Config::uTolerance = 1e-5;
 Scalar Config::pTolerance = 1e-5;
 Index  Config::maxIterations = 10'000;
 
+Scalar Config::timeStep = 0;
+Scalar Config::timeBegin = 0;
+Scalar Config::timeEnd = 0;
+
 using namespace Interpolation::Schemes;
 Gradient::Type Config::gradientScheme = Gradient::GREEN_GAUSE;
 Convection::Type Config::convectionScheme = Convection::SOU;

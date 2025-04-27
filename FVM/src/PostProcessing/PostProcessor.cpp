@@ -20,10 +20,23 @@ void PostProcessor::show()
 {
     auto meshCells = getMeshCells(m_mesh);
     auto meshFaces = getMeshFaces(m_mesh);
-    auto velocityField = getVelocityField(m_solver);
+
+    bool useAbsoluteVectorLength = true;
+    auto velocityField = getVelocityField(m_solver, 0, useAbsoluteVectorLength);
+
+    auto applyScale = [&velocityField](Scalar scale)
+    {
+        for (auto& arrow : velocityField)
+        {
+            arrow.setScale(scale);
+        }
+    };
 
     GuiWindow window(800, 600, "Post Processing");
     window.setView(getInitializeView(m_mesh));
+
+    Index timePointIdx = 0;
+    float scale = 1;
 
     while (window.isOpen())
     {
@@ -31,6 +44,24 @@ void PostProcessor::show()
         window.clear({230, 230, 230});
 
         ImGui::Begin("Controls");
+
+        if (m_solver.isTransient() && ImGui::SliderInt("Time Point", &timePointIdx, 0, m_solver.getTimePointAmount() - 1))
+        {
+            velocityField = getVelocityField(m_solver, timePointIdx, useAbsoluteVectorLength);
+            applyScale(scale);
+        }
+
+        if (ImGui::Checkbox("Absolute vector size", &useAbsoluteVectorLength))
+        {
+            velocityField = getVelocityField(m_solver, timePointIdx, useAbsoluteVectorLength);
+            scale = 1;
+        }
+
+        if (ImGui::SliderFloat("Vector Scale", &scale, 0, 10))
+        {
+            applyScale(scale);
+        }
+
         ImGui::End();
 
         for (auto const& face : meshFaces)
