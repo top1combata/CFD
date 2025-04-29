@@ -127,3 +127,40 @@ List<Arrow> getVelocityField(SolverBase const& solver, Index timePointIdx, bool 
 
     return arrows;
 }
+
+
+sf::Color getGradientColor(Scalar t)
+{
+    t = 1 - t;
+    if (t < Scalar(1) / 3)
+    {
+        return sf::Color(255, 3 * t * 255, 0);
+    }
+    if (t < Scalar(2) / 3)
+    {
+        return sf::Color(255 - (3 * t - 1) * 255, 255, 0);
+    }
+    return sf::Color(0, 255, (3 * t - 2) * 255);
+}
+
+
+void heatMapColor(List<sf::ConvexShape>& cells, std::function<Scalar(Index)> const& fieldGetter)
+{
+    Index totalCells = cells.size();
+    
+    Scalar minValue = std::numeric_limits<Scalar>::max();
+    Scalar maxValue = std::numeric_limits<Scalar>::min();
+    for (Index cellIdx = 0; cellIdx < totalCells; cellIdx++)
+    {
+        Scalar fieldValue = fieldGetter(cellIdx);
+        minValue = std::min(minValue, fieldValue);
+        maxValue = std::max(maxValue, fieldValue);
+    }
+
+    for (Index cellIdx = 0; cellIdx < totalCells; cellIdx++)
+    {
+        Scalar fieldValue = fieldGetter(cellIdx);
+        Scalar t = (fieldValue - minValue) / (maxValue - minValue);
+        cells[cellIdx].setFillColor(getGradientColor(t));
+    }
+}

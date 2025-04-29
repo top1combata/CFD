@@ -18,26 +18,85 @@ PostProcessor::PostProcessor(SolverBase const& solver)
 
 void PostProcessor::show()
 {
-    auto meshCells = getMeshCells(m_mesh);
-    auto meshFaces = getMeshFaces(m_mesh);
-
-    bool useAbsoluteVectorLength = true;
-    auto velocityField = getVelocityField(m_solver, 0, useAbsoluteVectorLength);
-
-    auto applyScale = [&velocityField](Scalar scale)
-    {
-        for (auto& arrow : velocityField)
-        {
-            arrow.setScale(scale);
-        }
-    };
-
     GuiWindow window(800, 600, "Post Processing");
     window.setView(getInitializeView(m_mesh));
 
+    auto meshCells = getMeshCells(m_mesh);
+    auto meshFaces = getMeshFaces(m_mesh);
+    List<Arrow> velocityField;
+
+    enum PlotType
+    {
+        VELOCITY,
+        VELOCITY_MAGNITUDE,
+        PRESSURE
+    };
+
+    bool useAbsoluteVectorLength = true;
+    Index plotType = VELOCITY;
     Index timePointIdx = 0;
     float scale = 1;
 
+    auto updateEnitites = [&]()
+    {
+        auto applyScale = [&]()
+        {
+            for (auto& arrow : velocityField)
+            {
+                arrow.setScale(scale);
+            }
+        };
+
+        switch (plotType)
+        {
+        case VELOCITY:
+            velocityField = getVelocityField(m_solver, timePointIdx, useAbsoluteVectorLength);
+            applyScale();
+            break;
+
+        case VELOCITY_MAGNITUDE:
+            heatMapColor(meshCells, [this, &timePointIdx](Index cellIdx)
+            {
+                return m_solver.getVelocity(timePointIdx)(cellIdx).norm();
+            });      
+            break;
+
+        case PRESSURE:
+            heatMapColor(meshCells, [this, &timePointIdx](Index cellIdx)
+            {
+                return m_solver.getPressure(timePointIdx)(cellIdx);
+            });
+            break;
+        }
+    };
+
+    auto renderEntities = [&]()
+    {
+        for (auto const& face : meshFaces)
+        {
+            window.render(face);
+        }
+
+        switch (plotType)
+        {
+        case VELOCITY:
+            for (auto const& arrow : velocityField)
+            {
+                window.render(arrow);
+            }
+            break;
+
+        case VELOCITY_MAGNITUDE:
+        case PRESSURE:
+            for (auto const& cell : meshCells)
+            {
+                window.render(cell);
+            }
+            break;
+        }
+    };
+
+    updateEnitites();
     while (window.isOpen())
     {
         window.pollEvent();
@@ -45,33 +104,32 @@ void PostProcessor::show()
 
         ImGui::Begin("Controls");
 
-        if (m_solver.isTransient() && ImGui::SliderInt("Time Point", &timePointIdx, 0, m_solver.getTimePointAmount() - 1))
+        if (ImGui::Combo("Plot type", &plotType, "Velocity\0Velocity magnitude\0Pressure\0"))
         {
-            velocityField = getVelocityField(m_solver, timePointIdx, useAbsoluteVectorLength);
-            applyScale(scale);
+            updateEnitites();
         }
 
-        if (ImGui::Checkbox("Absolute vector size", &useAbsoluteVectorLength))
+        if (m_solver.isTransient() && ImGui::SliderInt("Time point", &timePointIdx, 0, m_solver.getTimePointAmount() - 1))
         {
-            velocityField = getVelocityField(m_solver, timePointIdx, useAbsoluteVectorLength);
-            scale = 1;
+            updateEnitites();
         }
 
-        if (ImGui::SliderFloat("Vector Scale", &scale, 0, 10))
+        if (plotType == VELOCITY)
         {
-            applyScale(scale);
+            if (ImGui::Checkbox("Absolute vector size", &useAbsoluteVectorLength))
+            {
+                updateEnitites();
+            }
+
+            if (ImGui::SliderFloat("Vector scale", &scale, 0, 10))
+            {
+                updateEnitites();
+            }
         }
 
         ImGui::End();
 
-        for (auto const& face : meshFaces)
-        {
-            window.render(face);
-        }
-        for (auto const& arrow : velocityField)
-        {
-            window.render(arrow);
-        }
+        renderEntities();
 
         window.renderGuiAndDisplay();
     }
