@@ -65,6 +65,7 @@ List<sf::ConvexShape> getMeshCells(MeshBase const& mesh)
 List<Line> getMeshFaces(MeshBase const& mesh)
 {
     constexpr sf::Color FACE_COLOR = {150, 150, 150};
+    constexpr sf::Color BOUNDARY_FACE_COLOR = sf::Color::Blue;
 
     auto getFace = [&](Index faceIdx)
     {
@@ -74,7 +75,7 @@ List<Line> getMeshFaces(MeshBase const& mesh)
         Vector end = begin + orthogonal;
         
         Line line(begin, end);
-        line.setColor(FACE_COLOR);
+        line.setColor(mesh.isBoundaryFace(faceIdx) ? BOUNDARY_FACE_COLOR : FACE_COLOR);
         return line;
     };
 

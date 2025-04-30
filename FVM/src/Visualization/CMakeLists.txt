@@ -36,6 +36,7 @@ target_link_libraries(${LIBRARY_NAME} PRIVATE
 )
 
 target_sources(${LIBRARY_NAME} PRIVATE
+    MeshDrawer.cpp
     PostProcessor.cpp
 )
 

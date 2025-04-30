@@ -1,9 +1,9 @@
 #include <Mesh/2D/Structured/CartesianMesh2D.h>
 #include <Solvers/SIMPLE/SimpleAlgorithm.h>
+#include <Solvers/PISO/PisoAlgorithm.h>
 #include <Config/Config.h>
+#include <Visualization/PostProcessor.h>
 
-#include <omp.h>
-#include <fstream>
 
 int main(int argc, char** argv)
 {
@@ -13,18 +13,17 @@ int main(int argc, char** argv)
     constexpr Scalar inletVelocity = 0.03;
     constexpr Scalar outletPressure = 0;
 
-    CartesianMesh2D mesh(15, 15, 1.0, 0.2);
+    CartesianMesh2D mesh(10, 10, 1.0, 0.2);
     mesh.setBottomBoundary(Boundaries::wall());
     mesh.setTopBoundary(Boundaries::wall());
     mesh.setRightBoundary(Boundaries::outlet(outletPressure));
     mesh.setLeftBoundary(Boundaries::inlet({inletVelocity, 0, 0}));
 
-    SimpleAlgorithm SIMPLE(mesh);
+    PisoAlgorithm SIMPLE(mesh);
     SIMPLE.solve();
 
-    std::ofstream U("U");
-    for (Index cellIdx = 0; cellIdx < mesh.getCellAmount(); cellIdx++)
-        U << mesh.getCellCentroid(cellIdx).x() << ' ' << mesh.getCellCentroid(cellIdx).y() << ' ' << SIMPLE.getU()(cellIdx).x() << ' ' << SIMPLE.getU()(cellIdx).y() << '\n';
+    PostProcessor post(SIMPLE);
+    post.show();
 
     return 0;
 }

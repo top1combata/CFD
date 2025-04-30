@@ -6,7 +6,7 @@ add_subdirectory(Discretization)
 add_subdirectory(Mesh)
 add_subdirectory(Solvers)
 add_subdirectory(Utils)
-add_subdirectory(PostProcessing)
+add_subdirectory(Visualization)
 
 target_include_directories(${LIBRARY_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
@@ -15,7 +15,7 @@ if (UNIX)
     if (${TSAN})
         set(SANITIZER_FLAGS -fsanitize=thread)
     else()
-        set(SANITIZER_FLAGS -fsanitize=address)
+        set(SANITIZER_FLAGS -fsanitize=undefined -fsanitize=address)
     endif()
 endif()
 
