@@ -16,9 +16,9 @@ int main(int argc, char** argv)
     Config::viscosity = 1;
     Config::uRelax = 0.3;
     Config::pRelax = 0.1;
-    Config::timeStep = 0.3;
+    Config::timeStep = 0.005;
     Config::timeBegin = 0;
-    Config::timeEnd = 150;
+    Config::timeEnd = 15;
     Config::pTolerance = 1e-4;
     Config::maxIterations = 1000;
 
