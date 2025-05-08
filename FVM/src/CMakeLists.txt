@@ -7,6 +7,9 @@ add_subdirectory(Mesh)
 add_subdirectory(Solvers)
 add_subdirectory(Utils)
 add_subdirectory(Visualization)
+if (${BUILD_MESH_DRAWER})
+    add_subdirectory(MeshDrawer)
+endif()
 
 target_include_directories(${LIBRARY_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 

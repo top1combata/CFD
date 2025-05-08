@@ -1,6 +1,5 @@
 #include <Mesh/2D/Structured/CartesianMesh2D.h>
 #include <Solvers/SIMPLE/SimpleAlgorithm.h>
-#include <Solvers/PISO/PisoAlgorithm.h>
 #include <Config/Config.h>
 #include <Visualization/PostProcessor.h>
 
@@ -19,10 +18,10 @@ int main(int argc, char** argv)
     mesh.setRightBoundary(Boundaries::outlet(outletPressure));
     mesh.setLeftBoundary(Boundaries::inlet({inletVelocity, 0, 0}));
 
-    PisoAlgorithm SIMPLE(mesh);
-    SIMPLE.solve();
+    SimpleAlgorithm solver(mesh);
+    solver.solve();
 
-    PostProcessor post(SIMPLE);
+    PostProcessor post(solver);
     post.show();
 
     return 0;

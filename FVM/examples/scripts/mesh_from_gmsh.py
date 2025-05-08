@@ -9,7 +9,7 @@ import os
 
 def mesh_from_gmsh(gmsh_program: str, boundaries_map: Dict[str, Boundaries]) -> str:
     
-    SCRIPT_FILE_NAME = ".tmpscipt.geo"
+    SCRIPT_FILE_NAME = ".tmpscript.geo"
     MESH_FILE_NAME = ".tmpmesh.msh"
 
     with open(SCRIPT_FILE_NAME, "w") as file:

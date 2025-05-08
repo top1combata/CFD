@@ -3,33 +3,35 @@
 #include <Config/Config.h>
 #include <Visualization/PostProcessor.h>
 
-#include <fstream>
+#include <sstream>
 
 
-int main(int argc, char** argv)
+int main()
 {
-    if (argc < 2)
-    {
-        throw std::runtime_error("Need a mesh file");
-    }
-
     Config::viscosity = 1;
     Config::uRelax = 0.3;
     Config::pRelax = 0.1;
-    Config::timeStep = 0.3;
+    Config::timeStep = 1;
     Config::timeBegin = 0;
-    Config::timeEnd = 150;
+    Config::timeEnd = 100;
     Config::pTolerance = 1e-4;
     Config::maxIterations = 1000;
 
-    PolyMesh2D mesh{std::ifstream(argv[1])};
+    PolyMesh2D mesh
+    {
+        std::stringstream
+        (
+            #include "elbow_mesh.h"
+        )
+    };
+
     mesh.useNonOrthogonalCorrection = true;
 
-    SimpleAlgorithm SIMPLE(mesh);
-    SIMPLE.setTransient(true);
-    SIMPLE.solve();
+    SimpleAlgorithm solver(mesh);
+    solver.setTransient(true);
+    solver.solve();
 
-    PostProcessor post(SIMPLE);
+    PostProcessor post(solver);
     post.show();
 
     return 0;

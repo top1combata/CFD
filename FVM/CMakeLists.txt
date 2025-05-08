@@ -9,4 +9,7 @@ set(LIBRARY_NAME ${PROJECT_NAME})
 
 add_subdirectory(src)
 add_subdirectory(test)
-add_subdirectory(examples)
+
+if (${BUILD_EXAMPLES})
+    add_subdirectory(examples)
+endif()

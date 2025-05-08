@@ -1,6 +1,6 @@
 #include "MeshDrawer.h"
-#include "Window/Window.h"
-#include "Drawing/Drawing.h"
+#include "Visualization/Window/Window.h"
+#include "Visualization/Drawing/Drawing.h"
 
 
 MeshDrawer::MeshDrawer(MeshBase const& mesh)
