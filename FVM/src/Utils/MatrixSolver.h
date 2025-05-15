@@ -9,5 +9,5 @@ void relaxSystem(SparseMatrix& A, Matrix& rhs, Field<Vector> const& previousValu
 
 Matrix solveSystem(Matrix& A, Matrix const& rhs);
 
-Matrix solveSystem(SparseMatrix& A, Matrix const& rhs);
-Matrix solveSystem(SparseMatrix& A, Matrix const& rhs, Matrix const& guess);
+Matrix solveSystem(SparseMatrix& A, Matrix const& rhs, Scalar tolerance);
+Matrix solveSystem(SparseMatrix& A, Matrix const& rhs, Matrix const& guess, Scalar tolerance);

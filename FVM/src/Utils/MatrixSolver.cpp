@@ -47,7 +47,7 @@ Matrix solveSystem(Matrix& A, Matrix const& rhs)
 }
 
 
-Matrix solveSystem(SparseMatrix& A, Matrix const& rhs)
+Matrix solveSystem(SparseMatrix& A, Matrix const& rhs, Scalar tolerance)
 {
     assert(A.cols() == A.rows());
     assert(A.rows() == rhs.rows());
@@ -56,6 +56,7 @@ Matrix solveSystem(SparseMatrix& A, Matrix const& rhs)
     assert(solver.info() == Eigen::Success);
 
     Matrix result;
+    solver.setTolerance(tolerance);
     result = solver.solve(rhs);
 
     assert(solver.info() == Eigen::Success);
@@ -64,7 +65,7 @@ Matrix solveSystem(SparseMatrix& A, Matrix const& rhs)
 }
 
 
-Matrix solveSystem(SparseMatrix& A, Matrix const& rhs, Matrix const& guess)
+Matrix solveSystem(SparseMatrix& A, Matrix const& rhs, Matrix const& guess, Scalar tolerance)
 {
     assert(A.cols() == A.rows());
     assert(A.rows() == rhs.rows());
@@ -75,6 +76,7 @@ Matrix solveSystem(SparseMatrix& A, Matrix const& rhs, Matrix const& guess)
     assert(solver.info() == Eigen::Success);
 
     Matrix result;
+    solver.setTolerance(tolerance);
     result = solver.solveWithGuess(rhs, guess);
 
     assert(solver.info() == Eigen::Success);

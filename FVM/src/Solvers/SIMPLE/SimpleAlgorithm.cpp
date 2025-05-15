@@ -134,7 +134,7 @@ void SimpleAlgorithm::solveMomentum()
 
     // Solving for new velocity field
     m_timers["solving linear systems"].start();
-    auto sol = solveSystem(m_momentumSystemMatrix, m_momentumSystemSource);
+    auto sol = solveSystem(m_momentumSystemMatrix, m_momentumSystemSource, Config::uSystemTolerance);
     for (Index cellIdx = 0; cellIdx < m_mesh.getCellAmount(); cellIdx++)
     {
         m_currentVelocity(cellIdx) = sol.row(cellIdx).transpose();
@@ -150,10 +150,10 @@ void SimpleAlgorithm::correctPressure()
     m_timers["generating linear systems"].stop();
 
     m_timers["solving linear systems"].start();
-    Field<Scalar> pCorrection = solveSystem(m_pressureSystemMatrix, m_pressureSystemSource);
+    Field<Scalar> pCorrection = solveSystem(m_pressureSystemMatrix, m_pressureSystemSource, Config::pSystemTolerance);
     m_timers["solving linear systems"].stop();
 
-    // Idk how, but explicit under relaxtion gives faster convergence than implicit
+    // Explicit under relaxtion gives faster convergence than implicit
     pCorrection *= Config::pRelax;
 
     Field<Vector> uCorrection = getVelocityCorrection(pCorrection);

@@ -21,6 +21,10 @@ public:
     static Scalar uTolerance;
     static Scalar pTolerance;
     static Index maxIterations;
+    
+    // Tolerance for lienar system solvers
+    static Scalar uSystemTolerance;
+    static Scalar pSystemTolerance;
 
     // Interpolation schemes
     static Interpolation::Schemes::Gradient::Type gradientScheme;

@@ -13,9 +13,11 @@ int main()
     Config::pRelax = 0.1;
     Config::timeStep = 0.005;
     Config::timeBegin = 0;
-    Config::timeEnd = 15;
-    Config::pTolerance = 1e-4;
+    Config::timeEnd = 1;
+    Config::pTolerance = 1e-2;
     Config::maxIterations = 1000;
+    Config::uSystemTolerance = 1e-3;
+    Config::pSystemTolerance = 1e-3;
 
     PolyMesh2D mesh
     {

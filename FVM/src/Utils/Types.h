@@ -6,17 +6,22 @@
 #include <array>
 #include <unordered_map>
 
+#include <mimalloc.h>
+
 
 using Index = int;
 
 template<class T>
-using List = std::vector<T>;
+using Allocator = mi_stl_allocator<T>;
+
+template<class T>
+using List = std::vector<T, Allocator<T>>;
 
 template<class T, Index n>
 using Array = std::array<T,n>;
 
 template<class K, class V, class Hash = std::hash<K>, class Equal = std::equal_to<K>>
-using HashMap = std::unordered_map<K, V, Hash, Equal>;
+using HashMap = std::unordered_map<K, V, Hash, Equal, Allocator<std::pair<const K, V>>>;
 
 
 

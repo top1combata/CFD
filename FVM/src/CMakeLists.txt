@@ -19,7 +19,7 @@ if (UNIX)
         set(SANITIZER_FLAGS -fsanitize=thread)
     else()
         set(SANITIZER_FLAGS -fsanitize=undefined -fsanitize=address)
-    endif()
+endif()
 endif()
 
 if (CMAKE_BUILD_TYPE STREQUAL "Debug")
@@ -28,7 +28,7 @@ endif()
 
 target_compile_options(${LIBRARY_NAME} PUBLIC    
     $<$<CONFIG:Debug>: -Wall ${SANITIZER_FLAGS}>
-    $<$<CONFIG:Release>: -march=native>
+    $<$<CONFIG:Release>: -march=native -flto>
 )
 
 target_compile_options(${LIBRARY_NAME} PRIVATE    
@@ -37,6 +37,7 @@ target_compile_options(${LIBRARY_NAME} PRIVATE
 
 target_link_options(${LIBRARY_NAME} PUBLIC
     $<$<CONFIG:Debug>: ${SANITIZER_FLAGS}>
+    $<$<CONFIG:Release>: -flto>
 )
 
 # OpenMP
@@ -49,4 +50,18 @@ endif()
 
 #Eigen
 add_subdirectory(Eigen)
-target_link_libraries(${LIBRARY_NAME} PUBLIC eigen)
+
+
+include(FetchContent)
+
+FetchContent_Declare(
+  mimalloc
+  GIT_REPOSITORY https://github.com/microsoft/mimalloc.git
+  GIT_TAG        v2.1.2
+)
+FetchContent_MakeAvailable(mimalloc)
+
+target_link_libraries(${LIBRARY_NAME} PUBLIC 
+    eigen 
+    mimalloc
+)
